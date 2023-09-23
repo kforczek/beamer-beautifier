@@ -1,0 +1,3 @@
+PyMuPDF
+PyPDF2~=3.0.1
+PyQT5~=5.15.9
