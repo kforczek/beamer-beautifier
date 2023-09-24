@@ -2,7 +2,7 @@ import sys
 
 import fitz
 from PyQt5 import QtCore, QtGui, QtWidgets
-from src.latex.beamer_document import BeamerDocument
+from src.beamer.document import BeamerDocument
 
 
 class PDFViewer(QtWidgets.QWidget):

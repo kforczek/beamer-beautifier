@@ -1,5 +1,5 @@
 from gui.pdf_viewer import run_viewer
-from latex.beamer_document import BeamerDocument
+from beamer.document import BeamerDocument
 
 
 def run_example() -> None:
