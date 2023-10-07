@@ -2,6 +2,9 @@ import subprocess
 import os
 
 
+TEMP_DIR_NAME = ".bb-temp"
+
+
 class InvalidPathError(AttributeError):
     pass
 
@@ -12,13 +15,16 @@ class CompilationError(OSError):
         print()
 
 
-def compile_tex(src_doc_path: str, output_dir_path: str) -> str:
+def compile_tex(src_doc_path: str) -> str:
     """
     Compiles TeX document.
     :param src_doc_path: path to the TeX document to be compiled
-    :param output_dir_path: path to an output directory where PDF file (and compilation files) will be saved
     :return: path to the compiled PDF file
     """
+    output_dir_path = os.path.join(os.path.dirname(src_doc_path), TEMP_DIR_NAME)
+    if not os.path.exists(output_dir_path):
+        os.mkdir(output_dir_path)
+
     try:
         subprocess.check_call(
             ['xelatex', f'-output-directory={output_dir_path}', '-interaction=nonstopmode', src_doc_path],
