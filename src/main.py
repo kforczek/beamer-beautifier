@@ -1,10 +1,12 @@
+import os
 from gui.pdf_viewer import run_viewer
 from beamer.document import BeamerDocument
 
 
 def run_example() -> None:
-    #document = BeamerDocument("/home/kuba/Documents/beamer-beautifier/examples/overleaf-template/main.tex") # TODO change
-    document = BeamerDocument("/home/kuba/Documents/beamer-beautifier/examples/simple/main.tex") # TODO change
+    base_path = os.path.dirname(os.getcwd())
+    ex_file = os.path.join(base_path, "examples/simple/main.tex")
+    document = BeamerDocument(ex_file)
     run_viewer(document)
 
 
