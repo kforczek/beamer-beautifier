@@ -5,7 +5,9 @@ import shutil
 def select_example() -> str:
     example_docs = [
         ("Simple (single page)", "simple-single"),
-        ("Simple (multiple pages)", "simple-multiple")
+        ("Simple (multiple pages)", "simple-multiple"),
+        ("Freiburg University 1", "freiburg-demo-1"),
+        ("Freiburg University 2", "freiburg-demo-2")
     ]
 
     print("Select an example to continue with:")

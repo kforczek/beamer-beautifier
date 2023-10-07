@@ -1,4 +1,3 @@
-import os
 from gui.pdf_viewer import run_viewer
 from beamer.document import BeamerDocument
 from examples.selector import select_example
