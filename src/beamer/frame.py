@@ -1,5 +1,6 @@
-from .compilation import compile_tex, create_temp_dir
 import os
+from . import tokens
+from .compilation import compile_tex, create_temp_dir
 
 
 class FrameBeginError(Exception):
@@ -16,10 +17,6 @@ class FrameNameError(Exception):
 
 class Frame:
     """Single Beamer frame"""
-
-    _FRAME_BEGIN = "\\begin{frame}"
-    _FRAME_END = "\\end{frame}"
-
     def __init__(self, name: str, src_dir_path: str, code: str, include_code: str):
         """
         :param name: identifier that will be used to identify temporary TeX and PDF files resulting from this frame
@@ -27,11 +24,11 @@ class Frame:
         :param code: source code of the frame itself, encapsuled by \begin{frame} and \end{frame} commands
         :param include_code: optional LaTeX code snippet containing package includes
         """
-        if not code.startswith(self._FRAME_BEGIN):
-            raise FrameBeginError(f"Frame code should begin with \"{self._FRAME_BEGIN}\"")
+        if not code.startswith(tokens.FRAME_BEGIN):
+            raise FrameBeginError(f"Frame code should begin with \"{tokens.FRAME_BEGIN}\"")
 
-        if not code.endswith(self._FRAME_END):
-            raise FrameEndError(f"Frame code should end with \"{self._FRAME_END}\"")
+        if not code.endswith(tokens.FRAME_END):
+            raise FrameEndError(f"Frame code should end with \"{tokens.FRAME_END}\"")
 
         if not name.isidentifier():
             raise FrameNameError("Frame name cannot contain non-alphanumerical characters except underscores")
@@ -52,7 +49,9 @@ class Frame:
             if self._include_code:
                 tmp_file.write(self._include_code)
                 tmp_file.write("\n")
+            tmp_file.write(tokens.DOC_BEGIN)
             tmp_file.write(self._code)
+            tmp_file.write(tokens.DOC_END)
 
         return compile_tex(tmp_file_path)
 
