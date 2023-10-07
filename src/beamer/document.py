@@ -4,6 +4,10 @@ import os
 from .compilation import compile_tex
 
 
+class InvalidPathError(AttributeError):
+    pass
+
+
 class BeamerDocument:
     """Handles operations on Beamer code."""
 

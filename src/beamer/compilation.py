@@ -5,10 +5,6 @@ import os
 TEMP_DIR_NAME = ".bb-temp"
 
 
-class InvalidPathError(AttributeError):
-    pass
-
-
 class CompilationError(OSError):
     def __init__(self, *args):
         super().__init__(*args)
@@ -21,9 +17,8 @@ def compile_tex(src_doc_path: str) -> str:
     :param src_doc_path: path to the TeX document to be compiled
     :return: path to the compiled PDF file
     """
-    output_dir_path = os.path.join(os.path.dirname(src_doc_path), TEMP_DIR_NAME)
-    if not os.path.exists(output_dir_path):
-        os.mkdir(output_dir_path)
+    src_folder = os.path.dirname(src_doc_path)
+    output_dir_path = create_temp_dir(src_folder) if TEMP_DIR_NAME not in src_doc_path else src_folder
 
     try:
         subprocess.check_call(
@@ -44,3 +39,14 @@ def compile_tex(src_doc_path: str) -> str:
 def get_dest_pdf_path(src_doc_path: str, output_dir_path: str) -> str:
     """Returns a path where a compiled PDF document should be located."""
     return os.path.join(output_dir_path, os.path.basename(src_doc_path).split('.')[0] + ".pdf")
+
+
+def create_temp_dir(working_dir_path: str) -> str:
+    """
+    Creates a temporary directory if it doesn't exist.
+    :return: path to the temporary directory
+    """
+    temp_dir_path = os.path.join(working_dir_path, TEMP_DIR_NAME)
+    if not os.path.exists(temp_dir_path):
+        os.mkdir(temp_dir_path)
+    return temp_dir_path
