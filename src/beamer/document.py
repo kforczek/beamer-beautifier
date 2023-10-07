@@ -8,7 +8,10 @@ class InvalidPathError(AttributeError):
 
 
 class CompilationError(OSError):
-    pass
+    def __init__(self, *args):
+        super().__init__(*args)
+        print()
+
 
 
 class BeamerDocument:
@@ -16,19 +19,22 @@ class BeamerDocument:
 
     _TEMP_DIR_NAME = ".bb-temp"
 
-    def __init__(self, code_path: str):
-        self._path = code_path
-        self._temp_dir = os.path.join(os.path.dirname(code_path), self._TEMP_DIR_NAME)
+    def __init__(self, doc_path: str):
+        self._path = doc_path
+        self._temp_dir = os.path.join(os.path.dirname(doc_path), self._TEMP_DIR_NAME)
         self._check_path()
         self._create_temp_dir()
 
     def compile(self) -> str:
         """Compiles the document and returns a path to the temporary PDF file."""
         try:
-            subprocess.check_call(['xelatex', f'-output-directory={self._temp_dir}', self._path])
+            subprocess.check_call(
+                ['xelatex', f'-output-directory={self._temp_dir}', '-interaction=nonstopmode', self._path],
+                cwd=os.path.dirname(self._path)
+            )
         except subprocess.CalledProcessError:
             raise CompilationError(f"Failed to compile the LaTeX document: compilation process"
-                                   f" ended with an error (see logs for more info).")
+                                   f" ended with an error (see logs for more info).") from None
 
         file_path = self._get_dest_temp_path()
         if not os.path.exists(file_path):
