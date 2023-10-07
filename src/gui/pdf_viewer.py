@@ -31,10 +31,10 @@ class PDFViewer(QtWidgets.QWidget):
         pdf_label_layout = QtWidgets.QVBoxLayout()
 
         # Navigation buttons
-        self.previous_button = QtWidgets.QPushButton("<-")
+        self.previous_button = QtWidgets.QPushButton("←")
         self.previous_button.clicked.connect(self.previous_page)
         self.previous_button.setFixedSize(50, 50)
-        self.next_button = QtWidgets.QPushButton("->")
+        self.next_button = QtWidgets.QPushButton("→")
         self.next_button.clicked.connect(self.next_page)
         self.next_button.setFixedSize(50, 50)
 

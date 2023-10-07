@@ -1,12 +1,11 @@
 import os
 from gui.pdf_viewer import run_viewer
 from beamer.document import BeamerDocument
-
+from examples.selector import select_example
 
 def run_example() -> None:
-    base_path = os.path.dirname(os.getcwd())
-    ex_file = os.path.join(base_path, "examples/simple/main.tex")
-    document = BeamerDocument(ex_file)
+    doc_path = select_example()
+    document = BeamerDocument(doc_path)
     run_viewer(document)
 
 
