@@ -20,11 +20,49 @@ class BeamerDocument:
         self._check_path()
         self._split_frames()
 
+        self._current_frame = -1
+
     def compile(self) -> str:
-        """Compiles the document and returns a path to the temporary PDF file."""
+        """Compiles the document as separate frames."""
         for f in self._frames:
             f.compile()
         return compile_tex(self._path)
+
+    def next_page(self):
+        """
+        :return: next page from the document as PixMap, or None if there is no next page.
+        """
+        if self._current_frame >= len(self._frames):
+            return None
+
+        if self._current_frame < 0:
+            self._current_frame = 0
+
+        page_from_frame = self._frames[self._current_frame].next_page()
+        if page_from_frame:
+            return page_from_frame
+
+        # No next page in current frame, go to the next one
+        self._current_frame += 1
+        return self.next_page()
+
+    def prev_page(self):
+        """
+        :return: previous page from the document as PixMap, or None if there is no previous page.
+        """
+        if self._current_frame < 0:
+            return None
+
+        if self._current_frame >= len(self._frames):
+            self._current_frame = len(self._frames) - 1
+
+        page_from_frame = self._frames[self._current_frame].prev_page()
+        if page_from_frame:
+            return page_from_frame
+
+        # No previous page in current frame, go to the previous one
+        self._current_frame -= 1
+        return self.prev_page()
 
     def _check_path(self) -> None:
         if not os.path.exists(self._path) or not os.path.isfile(self._path):

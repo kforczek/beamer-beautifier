@@ -1,4 +1,5 @@
 import os
+import fitz
 from . import tokens
 from .compilation import compile_tex, create_temp_dir
 
@@ -38,10 +39,12 @@ class Frame:
         self._include_code = include_code
         self._src_dir = src_dir_path
 
-    def compile(self) -> str:
+        self._document = None
+        self._current_page = -1
+
+    def compile(self):
         """
         Compiles this frame as a standalone temporary document.
-        :return: path to the compiled PDF file
         """
         tmp_dir_path = create_temp_dir(self._src_dir)
         tmp_file_path = os.path.join(tmp_dir_path, f"{self._name}.tex")
@@ -53,10 +56,38 @@ class Frame:
             tmp_file.write(self._code)
             tmp_file.write(tokens.DOC_END)
 
-        return compile_tex(tmp_file_path)
+        pdf_path = compile_tex(tmp_file_path)
+        self._document = fitz.open(pdf_path)
 
     def code(self) -> str:
         """
         :return: LaTeX code of the frame.
         """
         return self._code
+
+    def next_page(self):
+        """
+        :return: next page from the PDF file as PixMap, or None if there is no next page.
+        """
+        if not self._document:
+            self.compile()
+        if self._current_page < self._document.page_count - 1:
+            self._current_page += 1
+            return self._curr_page_as_pixmap()
+        return None
+
+    def prev_page(self):
+        """
+        :return: previous page from the PDF file as PixMap, or None if there is no previous page.
+        """
+        if not self._document:
+            self.compile()
+        if self._current_page > 0:
+            self._current_page -= 1
+            return self._curr_page_as_pixmap()
+        return None
+
+    def _curr_page_as_pixmap(self):
+        zoom_factor = 4.0
+        mat = fitz.Matrix(zoom_factor, zoom_factor)
+        pix = self._document.load_page(self._current_page).get_pixmap(matrix=mat, alpha=True)
