@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 import os
 
@@ -43,10 +44,19 @@ def get_dest_pdf_path(src_doc_path: str, output_dir_path: str) -> str:
 
 def create_temp_dir(working_dir_path: str) -> str:
     """
-    Creates a temporary directory if it doesn't exist.
+    Creates a temporary working directory if it doesn't exist.
     :return: path to the temporary directory
     """
     temp_dir_path = os.path.join(working_dir_path, TEMP_DIR_NAME)
-    if not os.path.exists(temp_dir_path):
-        os.mkdir(temp_dir_path)
+    if os.path.exists(temp_dir_path):
+        return temp_dir_path
+
+    os.mkdir(temp_dir_path)
+    for file in os.listdir(working_dir_path):
+        abs_src_path = os.path.join(working_dir_path, file)
+        if os.path.isfile(abs_src_path) and "tex" not in file.split("."):
+            shutil.copyfile(abs_src_path, os.path.join(temp_dir_path, file))
+        elif os.path.isdir(abs_src_path) and TEMP_DIR_NAME not in abs_src_path:
+            shutil.copytree(abs_src_path, os.path.join(temp_dir_path, file))
+
     return temp_dir_path

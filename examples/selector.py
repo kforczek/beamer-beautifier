@@ -35,6 +35,5 @@ def copy_example_to_temp_folder(src_folder: str) -> str:
     if os.path.exists(dest_path):
         shutil.rmtree(dest_path)
 
-    # os.mkdir(dest_path)
     shutil.copytree(src_path, dest_path)
     return os.path.join(dest_path, "main.tex")
