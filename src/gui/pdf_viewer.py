@@ -4,17 +4,24 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from src.beamer.document import BeamerDocument
 
 
+class EmptyDocumentError(ValueError):
+    pass
+
+
 class PDFViewer(QtWidgets.QWidget):
-    def __init__(self, pdf_path: str, parent=None):
+    def __init__(self, document: BeamerDocument, parent=None):
         super(PDFViewer, self).__init__(parent)
 
-        self.current_page = 0
-        self.pdf_path = pdf_path
-        self.document = fitz.open(self.pdf_path)
+        self._document = document
 
-        self.init_ui()
+        page = self._document.next_page()
+        if not page:
+            raise EmptyDocumentError("The document doesn't contain any page, got nothing to display")
 
-    def init_ui(self):
+        self._current_page = to_qt_pixmap(page)
+        self._init_ui()
+
+    def _init_ui(self):
         self.setGeometry(100, 100, 1160, 700)
         self.setWindowTitle('Beamer Beautifier')
 
@@ -32,10 +39,10 @@ class PDFViewer(QtWidgets.QWidget):
 
         # Navigation buttons
         self.previous_button = QtWidgets.QPushButton("←")
-        self.previous_button.clicked.connect(self.previous_page)
+        self.previous_button.clicked.connect(self._previous_page)
         self.previous_button.setFixedSize(50, 50)
         self.next_button = QtWidgets.QPushButton("→")
-        self.next_button.clicked.connect(self.next_page)
+        self.next_button.clicked.connect(self._next_page)
         self.next_button.setFixedSize(50, 50)
 
         # Button layout with spacers
@@ -63,61 +70,63 @@ class PDFViewer(QtWidgets.QWidget):
         layout.addWidget(self.splitter)
         self.setLayout(layout)
 
-        self.display_page()
-        self.load_thumbnails()
+        self._display_page()
+        self._load_thumbnails()
 
-    def load_thumbnails(self):
+    def _load_thumbnails(self):
+        # TODO will be changed in future
         while self.pdf_list.count() > 0:
             self.pdf_list.takeItem(0)
 
         for _ in range(10):
-            pixmap = self.load_pixmap(self.current_page).scaled(200, 200, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            pixmap = self._current_page.scaled(200, 200, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
             item = QtWidgets.QListWidgetItem()
             item.setIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(QtGui.QImage(pixmap.toImage()))))
             self.pdf_list.addItem(item)
 
-    def previous_page(self):
-        if self.current_page > 0:
-            self.current_page -= 1
-            self.display_page()
-            self.load_thumbnails()
+    def _previous_page(self):
+        page = self._document.prev_page()
+        if not page:
+            return
 
-    def next_page(self):
-        if self.current_page < self.document.page_count - 1:
-            self.current_page += 1
-            self.display_page()
-            self.load_thumbnails()
+        self._current_page = to_qt_pixmap(page)
+        self._display_page()
+        self._load_thumbnails()
 
-    def display_page(self):
+    def _next_page(self):
+        page = self._document.next_page()
+        if not page:
+            return
+
+        self._current_page = to_qt_pixmap(page)
+        self._display_page()
+        self._load_thumbnails()
+
+    def _display_page(self):
         current_width = self.pdf_widget.width()
         current_height = self.pdf_widget.height()
-        pixmap = self.load_pixmap(self.current_page).scaled(
+        pixmap = self._current_page.scaled(
             current_width, current_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation
         )
         self.pdf_widget.setPixmap(pixmap)
 
-    def load_pixmap(self, page):
-        zoom_factor = 4.0
-
-        mat = fitz.Matrix(zoom_factor, zoom_factor)
-
-        pix = self.document.load_page(page).get_pixmap(matrix=mat, alpha=True)
-
-        img = QtGui.QImage(pix.samples, pix.width, pix.height, pix.width * pix.n, QtGui.QImage.Format_RGBA8888)
-        return QtGui.QPixmap.fromImage(img)
-
     def resizeEvent(self, event):
-        self.display_page()
+        self._display_page()
         super(PDFViewer, self).resizeEvent(event)
 
     def showEvent(self, event):
-        self.display_page()
+        self._display_page()
         super(PDFViewer, self).showEvent(event)
 
 
+def to_qt_pixmap(fitz_pixmap):
+    img = QtGui.QImage(fitz_pixmap.samples, fitz_pixmap.width, fitz_pixmap.height,
+                       fitz_pixmap.width * fitz_pixmap.n, QtGui.QImage.Format_RGBA8888)
+    return QtGui.QPixmap.fromImage(img)
+
+
 def run_viewer(document: BeamerDocument):
-    doc_path = document.compile()
     app = QtWidgets.QApplication(sys.argv)
-    viewer = PDFViewer(doc_path)
+    viewer = PDFViewer(document)
     viewer.show()
     sys.exit(app.exec_())

@@ -7,7 +7,8 @@ def select_example() -> str:
         ("Simple (single page)", "simple-single"),
         ("Simple (multiple pages)", "simple-multiple"),
         ("Freiburg University 1", "freiburg-demo-1"),
-        ("Freiburg University 2", "freiburg-demo-2")
+        ("Freiburg University 2", "freiburg-demo-2"),
+        ("Overleaf (Universitat Siegen)", "overleaf-siegen")
     ]
 
     print("Select an example to continue with:")

@@ -22,12 +22,6 @@ class BeamerDocument:
 
         self._current_frame = -1
 
-    def compile(self) -> str:
-        """Compiles the document as separate frames."""
-        for f in self._frames:
-            f.compile()
-        return compile_tex(self._path)
-
     def next_page(self):
         """
         :return: next page from the document as PixMap, or None if there is no next page.
@@ -91,7 +85,7 @@ class BeamerDocument:
                 raise FrameCountError("Detected multiple consecutive frame ends, this won't compile")
 
             frame_code = f"{tokens.FRAME_BEGIN} {frame_code} {tokens.FRAME_END}"
-            frame_filename = f"{doc_name}_frame{idx:{idx_len}}"
+            frame_filename = f"{doc_name}_frame{idx:0{idx_len}}"
 
             frame = Frame(frame_filename, os.path.dirname(self._path), frame_code, header)
             self._frames.append(frame)

@@ -90,4 +90,4 @@ class Frame:
     def _curr_page_as_pixmap(self):
         zoom_factor = 4.0
         mat = fitz.Matrix(zoom_factor, zoom_factor)
-        pix = self._document.load_page(self._current_page).get_pixmap(matrix=mat, alpha=True)
+        return self._document.load_page(self._current_page).get_pixmap(matrix=mat, alpha=True)
