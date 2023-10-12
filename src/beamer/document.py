@@ -2,7 +2,6 @@
 import os
 from . import tokens
 from .frame import Frame
-from .compilation import compile_tex
 
 
 class InvalidPathError(AttributeError):
@@ -24,7 +23,7 @@ class BeamerDocument:
 
     def next_page(self):
         """
-        :return: next page from the document as PixMap, or None if there is no next page.
+        :return: next page from the document as list of PixMaps (first one is the original), or None if there is no next page.
         """
         if self._current_frame >= len(self._frames):
             return None
@@ -42,7 +41,7 @@ class BeamerDocument:
 
     def prev_page(self):
         """
-        :return: previous page from the document as PixMap, or None if there is no previous page.
+        :return: previous page from the document as list of PixMaps (first one is the original), or None if there is no previous page.
         """
         if self._current_frame < 0:
             return None

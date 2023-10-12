@@ -18,7 +18,8 @@ class PDFViewer(QtWidgets.QWidget):
         if not page:
             raise EmptyDocumentError("The document doesn't contain any page, got nothing to display")
 
-        self._current_page = to_qt_pixmap(page)
+        self._current_page = [to_qt_pixmap(page_opt) for page_opt in page]
+        self._selected_opt = 0
         self._init_ui()
 
     def _init_ui(self):
@@ -78,10 +79,12 @@ class PDFViewer(QtWidgets.QWidget):
         while self.pdf_list.count() > 0:
             self.pdf_list.takeItem(0)
 
-        for _ in range(10):
-            pixmap = self._current_page.scaled(200, 200, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        for idx, opt in enumerate(self._current_page):
+            pixmap = opt.scaled(200, 200, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
             item = QtWidgets.QListWidgetItem()
             item.setIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(QtGui.QImage(pixmap.toImage()))))
+            if idx == self._selected_opt:
+                item.setSelected(True)
             self.pdf_list.addItem(item)
 
     def _previous_page(self):
@@ -89,7 +92,7 @@ class PDFViewer(QtWidgets.QWidget):
         if not page:
             return
 
-        self._current_page = to_qt_pixmap(page)
+        self._current_page = [to_qt_pixmap(page_opt) for page_opt in page]
         self._display_page()
         self._load_thumbnails()
 
@@ -98,14 +101,14 @@ class PDFViewer(QtWidgets.QWidget):
         if not page:
             return
 
-        self._current_page = to_qt_pixmap(page)
+        self._current_page = [to_qt_pixmap(page_opt) for page_opt in page]
         self._display_page()
         self._load_thumbnails()
 
     def _display_page(self):
         current_width = self.pdf_widget.width()
         current_height = self.pdf_widget.height()
-        pixmap = self._current_page.scaled(
+        pixmap = self._current_page[self._selected_opt].scaled(
             current_width, current_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation
         )
         self.pdf_widget.setPixmap(pixmap)
