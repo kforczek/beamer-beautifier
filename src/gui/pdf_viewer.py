@@ -1,5 +1,4 @@
 import sys
-import fitz
 from PyQt5 import QtCore, QtGui, QtWidgets
 from src.beamer.document import BeamerDocument
 

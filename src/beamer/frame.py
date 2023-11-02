@@ -1,7 +1,8 @@
 import os
 import fitz
-from . import tokens
-from .compilation import compile_tex, create_temp_dir
+import src.beamer.tokens as tokens
+from src.beamer.compilation import compile_tex, create_temp_dir
+from src.beamer.generator import get_improvements
 
 
 class FrameBeginError(Exception):
@@ -18,6 +19,9 @@ class FrameNameError(Exception):
 
 class Frame:
     """Single Beamer frame"""
+
+    _IMPROVEMENTS = get_improvements()
+
     def __init__(self, name: str, src_dir_path: str, code: str, include_code: str):
         """
         :param name: identifier that will be used to identify temporary TeX and PDF files resulting from this frame
@@ -69,6 +73,12 @@ class Frame:
         """
         return self._codes[self._current_opt]
 
+    def original_code(self) -> str:
+        """
+        :return: LaTeX code of the original frame, regardless of current selection.
+        """
+        return self._codes[0]
+
     def next_page(self):
         """
         :return: next page from the PDF file as list of PixMaps (first one is the original),
@@ -102,9 +112,8 @@ class Frame:
         return pixmaps
 
     def _suggest_changes(self):
-        base_code = self._codes[0]
-        if tokens.ITEMIZE_BEGIN in base_code:
-            items_begin = base_code.find(tokens.ITEMIZE_BEGIN) + len(tokens.ITEMIZE_BEGIN)
-
-            items_to_center = base_code[: items_begin] + tokens.items_indent(2) + base_code[items_begin :]
-            self._codes.append(items_to_center)
+        src_code = self.original_code()
+        for improvement in self._IMPROVEMENTS:
+            improved_code = improvement.improve(src_code)
+            if improved_code:
+                self._codes.append(improved_code)

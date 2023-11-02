@@ -1,7 +1,7 @@
 
 import os
-from . import tokens
-from .frame import Frame
+import src.beamer.tokens as tokens
+from src.beamer.frame import Frame
 
 
 class InvalidPathError(AttributeError):

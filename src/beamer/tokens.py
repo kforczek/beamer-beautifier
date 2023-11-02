@@ -8,6 +8,7 @@ ITEMIZE_BEGIN = "\\begin{itemize}"
 ITEMIZE_END = "\\end{itemize}"
 ENUMERATE_BEGIN = "\\begin{enumerate}"
 ENUMERATE_END = "\\end{enumerate}"
+ITEM = "\\item"
 
 
 def hspace(size_cm: int) -> str:
