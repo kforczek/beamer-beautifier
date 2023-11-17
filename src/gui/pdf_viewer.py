@@ -45,6 +45,9 @@ class PDFViewer(QtWidgets.QWidget):
         self.next_button.clicked.connect(self._next_page)
         self.next_button.setFixedSize(50, 50)
 
+        self._improve_button = QtWidgets.QPushButton("Select this version")
+        self._improve_button.setEnabled(False)
+
         # Button layout with spacers
         button_layout = QtWidgets.QHBoxLayout()
         button_layout.addStretch(1)
@@ -53,18 +56,20 @@ class PDFViewer(QtWidgets.QWidget):
         button_layout.addWidget(self.next_button)
         button_layout.addStretch(1)
 
-        pdf_label_layout.addWidget(self.pdf_widget)
+        pdf_display_layout = QtWidgets.QVBoxLayout()
+        pdf_display_layout.addWidget(self.pdf_widget)
+        pdf_display_layout.addWidget(self._improve_button)
+        pdf_display_layout.setAlignment(self._improve_button, QtCore.Qt.AlignRight)
+        self.pdf_widget.setMinimumWidth(250)
+
+        pdf_label_layout.addLayout(pdf_display_layout)
         pdf_label_layout.addLayout(button_layout)
         pdf_label_container.setLayout(pdf_label_layout)
-
-        # Set minimum width to avoid the widget disappearing
-        pdf_label_container.setMinimumWidth(200)
 
         self.splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         self.splitter.addWidget(pdf_label_container)
         self.splitter.addWidget(self.pdf_list)
-
-        self.splitter.setSizes([700, 460])
+        self.splitter.setSizes([1040, 460])
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.splitter)
