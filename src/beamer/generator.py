@@ -107,8 +107,10 @@ class ListToTable(FrameImprovement):
                     buf = ""
                 else:
                     # Append to the buffer
-                    buf += token
-                    if first_item and depth == 1 and token == tokens.ITEM:
+                    if token != tokens.ITEM or depth > 1:
+                        buf += token
+                    elif first_item and depth == 1:
+                        buf = ""
                         first_item = False
             elif not list_done:
                 # Save everything to pre-code

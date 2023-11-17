@@ -1,7 +1,7 @@
 import os
 import fitz
 import src.beamer.tokens as tokens
-from src.beamer.compilation import compile_tex, create_temp_dir
+from src.beamer.compilation import compile_tex, create_temp_dir, CompilationError
 from src.beamer.generator import get_improvements
 
 
@@ -14,6 +14,10 @@ class FrameEndError(Exception):
 
 
 class FrameNameError(Exception):
+    pass
+
+
+class BaseFrameCompilationError(CompilationError):
     pass
 
 
@@ -55,17 +59,23 @@ class Frame:
         self._documents.clear()
         tmp_dir_path = create_temp_dir(self._src_dir)
         for opt_idx, code in enumerate(self._codes):
-            tmp_file_path = os.path.join(tmp_dir_path, f"{self._name}_opt{opt_idx}.tex")
+            tmp_file_name = f"{self._name}_opt{opt_idx}.tex"
+            tmp_file_path = os.path.join(tmp_dir_path, tmp_file_name)
             with open(tmp_file_path, "w") as tmp_file:
                 if self._include_code:
                     tmp_file.write(self._include_code)
                     tmp_file.write("\n")
-                tmp_file.write(tokens.DOC_BEGIN)
+                tmp_file.write(tokens.DOC_BEGIN + "\n")
                 tmp_file.write(code)
-                tmp_file.write(tokens.DOC_END)
+                tmp_file.write("\n" + tokens.DOC_END)
 
-            pdf_path = compile_tex(tmp_file_path)
-            self._documents.append(fitz.open(pdf_path))
+            try:
+                pdf_path = compile_tex(tmp_file_path)
+                self._documents.append(fitz.open(pdf_path))
+            except CompilationError as e:
+                if opt_idx == 0:
+                    raise BaseFrameCompilationError(f'Compilation failed for frame "{tmp_file_name}"')
+                print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
 
     def code(self) -> str:
         """
@@ -86,8 +96,10 @@ class Frame:
         """
         if not self._documents:
             self.compile()
-        if self._current_page < self._documents[self._current_opt].page_count - 1:
-            self._current_page += 1
+
+        self._current_page += 1
+        if self._current_page < self._documents[self._current_opt].page_count:
+
             return self._curr_page_as_pixmaps()
         return None
 
@@ -98,9 +110,11 @@ class Frame:
         """
         if not self._documents:
             self.compile()
-        if self._current_page > 0:
-            self._current_page -= 1
+
+        self._current_page -= 1
+        if self._current_page > -1:
             return self._curr_page_as_pixmaps()
+
         return None
 
     def _curr_page_as_pixmaps(self):

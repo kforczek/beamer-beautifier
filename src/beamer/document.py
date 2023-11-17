@@ -83,7 +83,7 @@ class BeamerDocument:
             if tokens.FRAME_END in frame_code:
                 raise FrameCountError("Detected multiple consecutive frame ends, this won't compile")
 
-            frame_code = f"{tokens.FRAME_BEGIN}{frame_code}{tokens.FRAME_END}"
+            frame_code = f"{tokens.FRAME_BEGIN}{frame_code}\n{tokens.FRAME_END}"
             frame_filename = f"{doc_name}_frame{idx:0{idx_len}}"
 
             frame = Frame(frame_filename, os.path.dirname(self._path), frame_code, header)
