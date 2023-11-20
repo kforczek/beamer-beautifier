@@ -1,6 +1,6 @@
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
-from src.gui.widgets import MainSplitter, ImageDisplay, ThumbnailsListView, NavigationButton
+from src.gui.widgets import MainSplitter
 from src.beamer.document import BeamerDocument
 
 
@@ -8,7 +8,7 @@ class EmptyDocumentError(ValueError):
     pass
 
 
-class PDFViewer(QtWidgets.QWidget):
+class MainWindow(QtWidgets.QFrame):
     def __init__(self, document: BeamerDocument, parent=None):
         super().__init__(parent)
 
@@ -82,11 +82,11 @@ class PDFViewer(QtWidgets.QWidget):
 
     def resizeEvent(self, event):
         self._display_page()
-        super(PDFViewer, self).resizeEvent(event)
+        super(MainWindow, self).resizeEvent(event)
 
     def showEvent(self, event):
         self._display_page()
-        super(PDFViewer, self).showEvent(event)
+        super(MainWindow, self).showEvent(event)
 
 
 def to_qt_pixmap(fitz_pixmap):
@@ -97,6 +97,6 @@ def to_qt_pixmap(fitz_pixmap):
 
 def run_viewer(document: BeamerDocument):
     app = QtWidgets.QApplication(sys.argv)
-    viewer = PDFViewer(document)
+    viewer = MainWindow(document)
     viewer.show()
     sys.exit(app.exec_())
