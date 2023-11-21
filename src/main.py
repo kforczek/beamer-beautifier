@@ -1,4 +1,4 @@
-from gui.gui import run_viewer
+from gui.app import run_app
 from beamer.document import BeamerDocument
 from examples.selector import select_example
 
@@ -6,7 +6,7 @@ from examples.selector import select_example
 def run_example() -> None:
     doc_path = select_example()
     document = BeamerDocument(doc_path)
-    run_viewer(document)
+    run_app(document)
 
 
 if __name__ == '__main__':
