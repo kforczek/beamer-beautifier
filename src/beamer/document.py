@@ -57,6 +57,14 @@ class BeamerDocument:
         self._current_frame -= 1
         return self.prev_page()
 
+    def select_alternative(self, idx: int):
+        """
+        Handles selection of the frame alternative, identified by its index (following the order of PixMaps returned
+        by prev_page() and next_page() methods).
+        :param idx: index of the alternative frame to be selected
+        """
+        pass
+
     def _check_path(self) -> None:
         if not os.path.exists(self._path) or not os.path.isfile(self._path):
             raise InvalidPathError(f"Provided Beamer presentation path is invalid: {self._path}")

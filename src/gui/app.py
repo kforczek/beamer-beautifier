@@ -34,6 +34,7 @@ class MainWindow(QtWidgets.QFrame):
 
         splitter.prev_button.clicked.connect(self._prev_page)
         splitter.next_button.clicked.connect(self._next_page)
+        splitter.improve_button.clicked.connect(self._select_improvement)
         self._thumbnails_view.itemSelectionChanged.connect(self._thumbnail_selection_changed)
 
     def _init_document_logic(self, document: BeamerDocument):
@@ -92,23 +93,34 @@ class MainWindow(QtWidgets.QFrame):
         self._image_display.setPixmap(pixmap)
 
     def _thumbnail_selection_changed(self):
-        #TODO
-
         curr_item = self._thumbnails_view.currentItem()
-        highlighted_opt = self._thumbs.index(curr_item) if curr_item else None
-        if not highlighted_opt or highlighted_opt == self._selected_opt:
+
+        try:
+            self._highlighted_opt = self._thumbs.index(curr_item) if curr_item else None
+        except ValueError:
+            self._highlighted_opt = None
+
+        if not self._highlighted_opt or self._highlighted_opt == self._selected_opt:
             if len(self._thumbs) > self._selected_opt:
                 self._thumbnails_view.setCurrentItem(self._thumbs[self._selected_opt])
-                self._handle_thumb_highlight(self._selected_opt)
+                self._highlighted_opt = self._selected_opt
+                self._handle_thumb_highlight()
             return
 
         # Another option has been highlighted
-        self._handle_thumb_highlight(highlighted_opt)
+        self._handle_thumb_highlight()
 
-    def _handle_thumb_highlight(self, highlighted_idx: int):
-        self._highlighted_opt = highlighted_idx
-        self._improve_button.setEnabled(highlighted_idx != self._selected_opt)
+    def _handle_thumb_highlight(self):
+        self._improve_button.setEnabled(self._highlighted_opt != self._selected_opt)
         self._display_page()
+
+    def _select_improvement(self):
+        if self._highlighted_opt == self._selected_opt:
+            return
+
+        self._document.select_alternative(self._selected_opt)
+        self._selected_opt = self._highlighted_opt
+        self._handle_thumb_highlight()
 
     def resizeEvent(self, event):
         self._display_page()
