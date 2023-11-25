@@ -84,7 +84,7 @@ class MainWindow(QtWidgets.QFrame):
         self._load_thumbnails()
 
     def _display_page(self):
-        option = self._highlighted_opt if self._highlighted_opt else self._selected_opt
+        option = self._highlighted_opt if self._highlighted_opt is not None else self._selected_opt
         current_width = self._image_display.width()
         current_height = self._image_display.height()
         pixmap = self._current_page[option].scaled(
@@ -100,7 +100,7 @@ class MainWindow(QtWidgets.QFrame):
         except ValueError:
             self._highlighted_opt = None
 
-        if not self._highlighted_opt or self._highlighted_opt == self._selected_opt:
+        if self._highlighted_opt in (None, self._selected_opt):
             if len(self._thumbs) > self._selected_opt:
                 self._thumbnails_view.setCurrentItem(self._thumbs[self._selected_opt])
                 self._highlighted_opt = self._selected_opt
