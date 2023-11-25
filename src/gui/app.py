@@ -27,7 +27,7 @@ class MainWindow(QtWidgets.QFrame):
 
         self._image_display = splitter.left_pane.image_display
         self._improve_button = splitter.left_pane.function_buttons.improve_button
-        self._save_button = splitter.left_pane.function_buttons.improve_button
+        self._save_button = splitter.left_pane.function_buttons.save_button
         self._thumbnails_view = splitter.right_pane.thumbnails_view
 
         splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
@@ -42,6 +42,7 @@ class MainWindow(QtWidgets.QFrame):
             raise EmptyDocumentError("The document doesn't contain any pages, got nothing to display")
 
         self._highlighted_opt = None
+        self._changes_count = 0
         self._thumbs = []
         self._load_page(page)
 
@@ -119,7 +120,12 @@ class MainWindow(QtWidgets.QFrame):
 
         self._selected_opt = self._highlighted_opt
         self._document.select_alternative(self._selected_opt)
+        self._update_save_button_state(self._selected_opt)
         self._handle_thumb_highlight()
+
+    def _update_save_button_state(self, new_selected_opt: int):
+        self._changes_count += 1 if new_selected_opt > 0 else -1
+        self._save_button.setEnabled(self._changes_count > 0)
 
     def resizeEvent(self, event):
         self._display_page()
