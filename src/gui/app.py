@@ -25,13 +25,14 @@ class MainWindow(QtWidgets.QFrame):
         splitter = MainSplitter(self)
         layout.addWidget(splitter)
 
-        self._image_display = splitter.image_display
-        self._thumbnails_view = splitter.thumbnails_view
-        self._improve_button = splitter.improve_button
+        self._image_display = splitter.left_pane.image_display
+        self._improve_button = splitter.left_pane.function_buttons.improve_button
+        self._save_button = splitter.left_pane.function_buttons.improve_button
+        self._thumbnails_view = splitter.right_pane.thumbnails_view
 
-        splitter.prev_button.clicked.connect(self._prev_page)
-        splitter.next_button.clicked.connect(self._next_page)
-        splitter.improve_button.clicked.connect(self._select_improvement)
+        splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
+        splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
+        self._improve_button.clicked.connect(self._select_improvement)
         self._thumbnails_view.itemSelectionChanged.connect(self._thumbnail_selection_changed)
 
     def _init_document_logic(self, document: BeamerDocument):

@@ -6,35 +6,27 @@ class MainSplitter(QtWidgets.QSplitter):
     def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(QtCore.Qt.Orientation.Horizontal, parent)
 
-        left_pane = MainSplitterLeftPane(self)
-        right_pane = MainSplitterRightPane(self)
+        self.left_pane = MainSplitterLeftPane(self)
+        self.right_pane = MainSplitterRightPane(self)
 
-        self.addWidget(left_pane)
-        self.addWidget(right_pane)
+        self.addWidget(self.left_pane)
+        self.addWidget(self.right_pane)
         self.setSizes([970, 430])
-
-        self.image_display = left_pane.image_display
-        self.thumbnails_view = right_pane.thumbnails_view
-        self.prev_button = left_pane.navigation_buttons.prev_button
-        self.next_button = left_pane.navigation_buttons.next_button
-        self.improve_button = left_pane.improve_button
 
 
 class MainSplitterLeftPane(QtWidgets.QWidget):
     def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
 
-        layout = QtWidgets.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(layout)
 
         self.image_display = ImageDisplay(self)
-        self.improve_button = QtWidgets.QPushButton("Select this version")
-        self.improve_button.setEnabled(False)
-        self.navigation_buttons = NavigationButtonsLayout(self)
+        self.function_buttons = FunctionButtonsLayout()
+        self.navigation_buttons = NavigationButtonsLayout()
 
         layout.addWidget(self.image_display)
-        layout.addWidget(self.improve_button)
-        layout.setAlignment(self.improve_button, QtCore.Qt.AlignmentFlag.AlignRight)
+        layout.addLayout(self.function_buttons)
         layout.addLayout(self.navigation_buttons)
 
 
@@ -50,15 +42,31 @@ class MainSplitterRightPane(QtWidgets.QWidget):
 
 
 class NavigationButtonsLayout(QtWidgets.QHBoxLayout):
-    def __init__(self, parent: QtWidgets.QWidget):
+    def __init__(self):
         super().__init__()
 
-        self.prev_button = NavigationButton(parent, "←")
-        self.next_button = NavigationButton(parent, "→")
+        self.prev_button = NavigationButton("←")
+        self.next_button = NavigationButton("→")
 
         self.addWidget(self.prev_button)
         self.addSpacing(20)
         self.addWidget(self.next_button)
+
+
+class FunctionButtonsLayout(QtWidgets.QHBoxLayout):
+    def __init__(self):
+        super().__init__()
+
+        self.save_button = QtWidgets.QPushButton("Save changes")
+        self.save_button.setEnabled(False)
+
+        self.improve_button = QtWidgets.QPushButton("Select this version")
+        self.improve_button.setEnabled(False)
+
+        self.addWidget(self.save_button)
+        self.addWidget(self.improve_button)
+        self.setAlignment(self.save_button, QtCore.Qt.AlignmentFlag.AlignLeft)
+        self.setAlignment(self.improve_button, QtCore.Qt.AlignmentFlag.AlignRight)
 
 
 class ImageDisplay(QtWidgets.QLabel):
@@ -82,8 +90,8 @@ class ThumbnailsListView(QtWidgets.QListWidget):
 
 
 class NavigationButton(QtWidgets.QPushButton):
-    def __init__(self, parent: QtWidgets.QWidget, text: str):
-        super().__init__(text, parent)
+    def __init__(self, text: str):
+        super().__init__(text)
 
         self.setSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Preferred)
 
