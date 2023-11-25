@@ -21,6 +21,10 @@ class BaseFrameCompilationError(CompilationError):
     pass
 
 
+class InvalidAlternativeIndex(ValueError):
+    pass
+
+
 class Frame:
     """Single Beamer frame"""
 
@@ -116,6 +120,24 @@ class Frame:
             return self._curr_page_as_pixmaps()
 
         return None
+
+    def current_alternative(self) -> int:
+        """
+        :return: index of the currently selected frame alternative.
+        """
+        return self._current_opt
+
+    def select_alternative(self, idx: int):
+        """
+        Handles selection of the frame alternative, identified by its index (following the order of PixMaps returned
+        by prev_page() and next_page() methods).
+        :param idx: index of the alternative frame to be selected
+        """
+        if idx >= len(self._codes) or idx < 0:
+            raise InvalidAlternativeIndex(f"Invalid index of the frame alternative: {idx} "
+                                          f"(correct index range: 0-{len(self._codes)-1})")
+
+        self._current_opt = idx
 
     def _curr_page_as_pixmaps(self):
         pixmaps = []

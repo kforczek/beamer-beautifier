@@ -57,13 +57,19 @@ class BeamerDocument:
         self._current_frame -= 1
         return self.prev_page()
 
+    def current_frame_alternative(self) -> int:
+        """
+        :return: index of the currently selected alternative for current frame.
+        """
+        return self._frames[self._current_frame].current_alternative()
+
     def select_alternative(self, idx: int):
         """
-        Handles selection of the frame alternative, identified by its index (following the order of PixMaps returned
-        by prev_page() and next_page() methods).
+        Handles selection of the alternative proposed for a current frame. The alternative is identified by its index
+        (following the order of PixMaps returned by prev_page() and next_page() methods).
         :param idx: index of the alternative frame to be selected
         """
-        pass
+        self._frames[self._current_frame].select_alternative(idx)
 
     def _check_path(self) -> None:
         if not os.path.exists(self._path) or not os.path.isfile(self._path):

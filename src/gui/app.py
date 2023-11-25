@@ -15,9 +15,6 @@ class MainWindow(QtWidgets.QFrame):
         self._init_ui()
         self._init_document_logic(document)
 
-        self._display_page()
-        self._load_thumbnails()
-
     def _init_ui(self):
         self.setGeometry(100, 100, 1480, 870)
         self.setWindowTitle('Beamer Beautifier')
@@ -43,10 +40,9 @@ class MainWindow(QtWidgets.QFrame):
         if not page:
             raise EmptyDocumentError("The document doesn't contain any pages, got nothing to display")
 
-        self._current_page = [to_qt_pixmap(page_opt) for page_opt in page]
-        self._selected_opt = 0
         self._highlighted_opt = None
         self._thumbs = []
+        self._load_page(page)
 
     def _load_thumbnails(self):
         self._thumbs.clear()
@@ -70,16 +66,18 @@ class MainWindow(QtWidgets.QFrame):
         if not page:
             return
 
-        self._current_page = [to_qt_pixmap(page_opt) for page_opt in page]
-        self._display_page()
-        self._load_thumbnails()
+        self._load_page(page)
 
     def _next_page(self):
         page = self._document.next_page()
         if not page:
             return
 
-        self._current_page = [to_qt_pixmap(page_opt) for page_opt in page]
+        self._load_page(page)
+
+    def _load_page(self, page_pixmaps):
+        self._current_page = [to_qt_pixmap(page_opt) for page_opt in page_pixmaps]
+        self._selected_opt = self._document.current_frame_alternative()
         self._display_page()
         self._load_thumbnails()
 
@@ -118,8 +116,8 @@ class MainWindow(QtWidgets.QFrame):
         if self._highlighted_opt == self._selected_opt:
             return
 
-        self._document.select_alternative(self._selected_opt)
         self._selected_opt = self._highlighted_opt
+        self._document.select_alternative(self._selected_opt)
         self._handle_thumb_highlight()
 
     def resizeEvent(self, event):
