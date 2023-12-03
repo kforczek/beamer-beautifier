@@ -37,8 +37,19 @@ class MainSplitterRightPane(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
-        self.thumbnails_view = ThumbnailsListView(self)
-        layout.addWidget(self.thumbnails_view)
+        self.top_thumbs_view = ThumbnailsListView(self)
+        self.bottom_thumbs_view = ThumbnailsListView(self)
+
+        first_label = QtWidgets.QLabel(self)
+        first_label.setText("Frame changes:")
+        second_label = QtWidgets.QLabel(self)
+        second_label.setText("Presentation (global) changes:")
+
+        layout.addWidget(first_label)
+        layout.addWidget(self.top_thumbs_view)
+        layout.addSpacing(10)
+        layout.addWidget(second_label)
+        layout.addWidget(self.bottom_thumbs_view)
 
 
 class NavigationButtonsLayout(QtWidgets.QHBoxLayout):

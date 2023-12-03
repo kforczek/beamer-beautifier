@@ -29,7 +29,7 @@ class MainWindow(QtWidgets.QFrame):
         self._image_display = splitter.left_pane.image_display
         self._improve_button = splitter.left_pane.function_buttons.improve_button
         self._save_button = splitter.left_pane.function_buttons.save_button
-        self._thumbnails_view = splitter.right_pane.thumbnails_view
+        self._thumbnails_view = splitter.right_pane.top_thumbs_view
 
         splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
         splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
