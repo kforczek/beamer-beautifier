@@ -6,6 +6,7 @@ def select_example() -> str:
     example_docs = [
         ("Simple (single page)", "simple-single"),
         ("Simple (multiple pages)", "simple-multiple"),
+        ("Simple (with itemize)", "simple-itemize"),
         ("Freiburg University 1", "freiburg-demo-1"),
         ("Freiburg University 2", "freiburg-demo-2"),
         ("Overleaf (Universitat Siegen)", "overleaf-siegen"),

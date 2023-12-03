@@ -71,6 +71,23 @@ class BeamerDocument:
         """
         self._frames[self._current_frame].select_alternative(idx)
 
+    def save(self, output_path: str):
+        """
+        Saves the modified document in the output path, overwriting the file if it already exists.
+        """
+        if not output_path.endswith('.tex'):
+            output_path = output_path + ".tex"
+        if os.path.exists(output_path):
+            os.remove(output_path)
+
+        with open(output_path, 'w') as fh:
+            fh.write(self._header)
+            fh.write(f"\n{tokens.DOC_BEGIN}\n")
+            for frame in self._frames:
+                fh.write("\n" + frame.code())
+            fh.write(self._post_frames_code)
+            fh.write(f"\n{tokens.DOC_END}\n")
+
     def _check_path(self) -> None:
         if not os.path.exists(self._path) or not os.path.isfile(self._path):
             raise InvalidPathError(f"Provided Beamer presentation path is invalid: {self._path}")
@@ -79,14 +96,15 @@ class BeamerDocument:
         """
         Splits the document and saves separate frame objects.
         """
-        header = ""
+        self._header = ""
         raw_frames = []
         with open(self._path, "r") as doc:
             content = doc.read()
             if content.count(tokens.FRAME_BEGIN) != content.count(tokens.FRAME_END):
                 raise FrameCountError("Detected different numbers of frame begins and ends, this won't compile")
 
-            header = content[: content.find(tokens.DOC_BEGIN)]
+            self._header = content[: content.find(tokens.DOC_BEGIN)]
+            self._post_frames_code = content[content.rfind(tokens.FRAME_END) + len(tokens.FRAME_END): content.rfind(tokens.DOC_END)]
             raw_frames = content.split(tokens.FRAME_BEGIN)[1:]
 
         doc_name = os.path.basename(self._path).rsplit('.', 1)[0].replace(' ', '_')
@@ -97,8 +115,10 @@ class BeamerDocument:
             if tokens.FRAME_END in frame_code:
                 raise FrameCountError("Detected multiple consecutive frame ends, this won't compile")
 
-            frame_code = f"{tokens.FRAME_BEGIN}{frame_code}\n{tokens.FRAME_END}"
+            if not frame_code.endswith("\n"):
+                frame_code += "\n"
+            frame_code = f"{tokens.FRAME_BEGIN}{frame_code}{tokens.FRAME_END}\n"
             frame_filename = f"{doc_name}_frame{idx:0{idx_len}}"
 
-            frame = Frame(frame_filename, os.path.dirname(self._path), frame_code, header)
+            frame = Frame(frame_filename, os.path.dirname(self._path), frame_code, self._header)
             self._frames.append(frame)

@@ -37,10 +37,10 @@ class Frame:
         :param code: source code of the frame itself, encapsuled by \begin{frame} and \end{frame} commands
         :param include_code: optional LaTeX code snippet containing package includes
         """
-        if not code.startswith(tokens.FRAME_BEGIN):
+        if not code.lstrip().startswith(tokens.FRAME_BEGIN):
             raise FrameBeginError(f"Frame code should begin with \"{tokens.FRAME_BEGIN}\"")
 
-        if not code.endswith(tokens.FRAME_END):
+        if not code.rstrip().endswith(tokens.FRAME_END):
             raise FrameEndError(f"Frame code should end with \"{tokens.FRAME_END}\"")
 
         if not name.isidentifier():

@@ -58,7 +58,8 @@ class ListToTable(FrameImprovement):
     def __init__(self, list_begin_tkn: str, list_end_tkn: str):
         self._list_begin_tkn = list_begin_tkn
         self._list_end_tkn = list_end_tkn
-        self._scanner = TokenScanner(list_begin_tkn, list_end_tkn, tokens.ITEM)
+        self._scanner = TokenScanner(tokens.ITEMIZE_BEGIN, tokens.ITEMIZE_END,
+                                     tokens.ENUMERATE_BEGIN, tokens.ENUMERATE_END, tokens.ITEM)
         self._cache: dict[str, ListToTable.SplitCode] = dict()
 
     def check_preconditions(self, frame_code: str) -> bool:
@@ -72,7 +73,13 @@ class ListToTable(FrameImprovement):
             changed_snippet += item + " & "
         changed_snippet += split_code.items[-1]
         changed_snippet += "\n\\end{tabular}"
-        return f"{split_code.pre_list_code}{changed_snippet}{split_code.post_list_code}"
+
+        rstripped = split_code.pre_list_code.rstrip()
+        if rstripped.endswith("\\\\") or rstripped.endswith("\n\n"):
+            pre_code = split_code.pre_list_code
+        else:
+            pre_code = f"{split_code.pre_list_code} \\\\"
+        return f"{pre_code}{changed_snippet}{split_code.post_list_code}"
 
     def _split_top_list_items(self, frame_code: str) -> SplitCode:
         if frame_code in self._cache:
@@ -87,11 +94,11 @@ class ListToTable(FrameImprovement):
         first_item = True
         for token in self._scanner.tokenize(frame_code):
             if not list_done:
-                if token == self._list_begin_tkn:
+                if token == self._list_begin_tkn or depth > 0 and token in (tokens.ITEMIZE_BEGIN, tokens.ENUMERATE_BEGIN):
                     depth += 1
                     if depth == 1:
                         continue
-                elif token == self._list_end_tkn:
+                elif token == self._list_end_tkn or depth > 1 and token in (tokens.ENUMERATE_END, tokens.ITEMIZE_END):
                     depth -= 1
                     if depth == 0:
                         if buf:

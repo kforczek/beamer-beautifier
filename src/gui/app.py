@@ -9,11 +9,12 @@ class EmptyDocumentError(ValueError):
 
 
 class MainWindow(QtWidgets.QFrame):
-    def __init__(self, document: BeamerDocument, parent=None):
+    def __init__(self, document: BeamerDocument, doc_folder_path: str, parent=None):
         super().__init__(parent)
 
         self._init_ui()
         self._init_document_logic(document)
+        self._doc_folder_path = doc_folder_path
 
     def _init_ui(self):
         self.setGeometry(100, 100, 1480, 870)
@@ -34,6 +35,7 @@ class MainWindow(QtWidgets.QFrame):
         splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
         self._improve_button.clicked.connect(self._select_improvement)
         self._thumbnails_view.itemSelectionChanged.connect(self._thumbnail_selection_changed)
+        self._save_button.clicked.connect(self._save_changes)
 
     def _init_document_logic(self, document: BeamerDocument):
         self._document = document
@@ -123,6 +125,12 @@ class MainWindow(QtWidgets.QFrame):
         self._update_save_button_state(self._selected_opt)
         self._handle_thumb_highlight()
 
+    def _save_changes(self):
+        path = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save modified presentation', directory=self._doc_folder_path)[0]
+        if not path:
+            return
+        self._document.save(path)
+
     def _update_save_button_state(self, new_selected_opt: int):
         self._changes_count += 1 if new_selected_opt > 0 else -1
         self._save_button.setEnabled(self._changes_count > 0)
@@ -142,8 +150,8 @@ def to_qt_pixmap(fitz_pixmap):
     return QtGui.QPixmap.fromImage(img)
 
 
-def run_app(document: BeamerDocument):
+def run_app(document: BeamerDocument, doc_folder: str):
     app = QtWidgets.QApplication(sys.argv)
-    viewer = MainWindow(document)
+    viewer = MainWindow(document, doc_folder)
     viewer.show()
     sys.exit(app.exec_())
