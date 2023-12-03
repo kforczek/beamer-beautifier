@@ -39,16 +39,15 @@ class MainSplitterRightPane(QtWidgets.QWidget):
 
         self.top_thumbs_view = ThumbnailsListView(self)
         self.bottom_thumbs_view = ThumbnailsListView(self)
+        self.global_thumbs_header = GlobalThumbnailsHeaderLayout()
 
-        first_label = QtWidgets.QLabel(self)
-        first_label.setText("Frame changes:")
-        second_label = QtWidgets.QLabel(self)
-        second_label.setText("Presentation (global) changes:")
+        top_label = QtWidgets.QLabel(self)
+        top_label.setText("Frame changes:")
 
-        layout.addWidget(first_label)
+        layout.addWidget(top_label)
         layout.addWidget(self.top_thumbs_view)
         layout.addSpacing(10)
-        layout.addWidget(second_label)
+        layout.addLayout(self.global_thumbs_header)
         layout.addWidget(self.bottom_thumbs_view)
 
 
@@ -78,6 +77,20 @@ class FunctionButtonsLayout(QtWidgets.QHBoxLayout):
         self.addWidget(self.improve_button)
         self.setAlignment(self.save_button, QtCore.Qt.AlignmentFlag.AlignLeft)
         self.setAlignment(self.improve_button, QtCore.Qt.AlignmentFlag.AlignRight)
+
+
+class GlobalThumbnailsHeaderLayout(QtWidgets.QHBoxLayout):
+    def __init__(self):
+        super().__init__()
+
+        label = QtWidgets.QLabel()
+        label.setText("Presentation (global) changes:")
+        self.regenerate_button = QtWidgets.QPushButton("Regenerate")
+
+        self.addWidget(label)
+        self.addWidget(self.regenerate_button)
+        self.setAlignment(label, QtCore.Qt.AlignmentFlag.AlignLeft)
+        self.setAlignment(self.regenerate_button, QtCore.Qt.AlignmentFlag.AlignRight)
 
 
 class ImageDisplay(QtWidgets.QLabel):
