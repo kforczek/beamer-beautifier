@@ -4,6 +4,10 @@ import src.beamer.tokens as tokens
 from src.beamer.frame import Frame
 
 
+class NotBeamerPresentation(ValueError):
+    pass
+
+
 class InvalidPathError(AttributeError):
     pass
 
@@ -100,6 +104,10 @@ class BeamerDocument:
         raw_frames = []
         with open(self._path, "r") as doc:
             content = doc.read()
+
+            if not tokens.BEAMER_DECL in content:
+                raise NotBeamerPresentation("Provided document is not a Beamer presentation.")
+
             if content.count(tokens.FRAME_BEGIN) != content.count(tokens.FRAME_END):
                 raise FrameCountError("Detected different numbers of frame begins and ends, this won't compile")
 
