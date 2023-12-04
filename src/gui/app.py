@@ -2,6 +2,7 @@ import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from src.gui.widgets import MainSplitter
 from src.beamer.document import BeamerDocument
+from src.beamer.page_info import PageInfo
 
 
 class EmptyDocumentError(ValueError):
@@ -29,12 +30,14 @@ class MainWindow(QtWidgets.QFrame):
         self._image_display = splitter.left_pane.image_display
         self._improve_button = splitter.left_pane.function_buttons.improve_button
         self._save_button = splitter.left_pane.function_buttons.save_button
-        self._thumbnails_view = splitter.right_pane.top_thumbs_view
+        self._local_thumbnails_view = splitter.right_pane.top_thumbs_view
+        self._global_thumbnails_view = splitter.right_pane.bottom_thumbs_view
 
         splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
         splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
         self._improve_button.clicked.connect(self._select_improvement)
-        self._thumbnails_view.itemSelectionChanged.connect(self._thumbnail_selection_changed)
+        self._local_thumbnails_view.itemSelectionChanged.connect(self._local_thumbnail_selection_changed)
+        # TODO connect thumbs bottom
         self._save_button.clicked.connect(self._save_changes)
 
     def _init_document_logic(self, document: BeamerDocument):
@@ -49,20 +52,24 @@ class MainWindow(QtWidgets.QFrame):
         self._load_page(page)
 
     def _load_thumbnails(self):
-        self._thumbs.clear()
-        while self._thumbnails_view.count() > 0:
-            self._thumbnails_view.takeItem(0)
+        self._load_specific_thumbnails(self._local_thumbnails_view, self._curr_local_improvements)
+        self._load_specific_thumbnails(self._global_thumbnails_view, self._curr_global_improvements)
 
-        for idx, opt in enumerate(self._current_page):
+    def _load_specific_thumbnails(self, dest_listview, thumbnails_list):
+        self._thumbs.clear()
+        while dest_listview.count() > 0:
+            dest_listview.takeItem(0)
+
+        for idx, opt in enumerate(thumbnails_list):
             pixmap = opt.scaled(200, 200, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
             item = QtWidgets.QListWidgetItem()
             item.setIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(QtGui.QImage(pixmap.toImage()))))
 
-            self._thumbnails_view.addItem(item)
+            dest_listview.addItem(item)
             self._thumbs.append(item)
 
             if idx == self._selected_opt:
-                self._thumbnails_view.setCurrentItem(item)
+                dest_listview.setCurrentItem(item)
                 self._highlighted_opt = self._selected_opt
 
     def _prev_page(self):
@@ -79,8 +86,9 @@ class MainWindow(QtWidgets.QFrame):
 
         self._load_page(page)
 
-    def _load_page(self, page_pixmaps):
-        self._current_page = [to_qt_pixmap(page_opt) for page_opt in page_pixmaps]
+    def _load_page(self, page_info: PageInfo):
+        self._curr_local_improvements = [to_qt_pixmap(page_opt) for page_opt in page_info.local_improvements]
+        self._curr_global_improvements = [to_qt_pixmap(page_opt) for page_opt in page_info.global_improvements]
         self._selected_opt = self._document.current_frame_alternative()
         self._display_page()
         self._load_thumbnails()
@@ -89,13 +97,13 @@ class MainWindow(QtWidgets.QFrame):
         option = self._highlighted_opt if self._highlighted_opt is not None else self._selected_opt
         current_width = self._image_display.width()
         current_height = self._image_display.height()
-        pixmap = self._current_page[option].scaled(
+        pixmap = self._curr_local_improvements[option].scaled(
             current_width, current_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation
         )
         self._image_display.setPixmap(pixmap)
 
-    def _thumbnail_selection_changed(self):
-        curr_item = self._thumbnails_view.currentItem()
+    def _local_thumbnail_selection_changed(self):
+        curr_item = self._local_thumbnails_view.currentItem()
 
         try:
             self._highlighted_opt = self._thumbs.index(curr_item) if curr_item else None
@@ -104,7 +112,7 @@ class MainWindow(QtWidgets.QFrame):
 
         if self._highlighted_opt in (None, self._selected_opt):
             if len(self._thumbs) > self._selected_opt:
-                self._thumbnails_view.setCurrentItem(self._thumbs[self._selected_opt])
+                self._local_thumbnails_view.setCurrentItem(self._thumbs[self._selected_opt])
                 self._highlighted_opt = self._selected_opt
                 self._handle_thumb_highlight()
             return

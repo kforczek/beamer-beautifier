@@ -1,8 +1,11 @@
 import os
+from typing import List, Optional
+
 import fitz
 import src.beamer.tokens as tokens
 from src.beamer.compilation import compile_tex, create_temp_dir, CompilationError
-from src.beamer.generator import get_improvements
+from src.beamer.frame_generator import get_improvements
+from src.beamer.page_info import PageInfo
 
 
 class FrameBeginError(Exception):
@@ -30,12 +33,13 @@ class Frame:
 
     _IMPROVEMENTS = get_improvements()
 
-    def __init__(self, name: str, src_dir_path: str, code: str, include_code: str):
+    def __init__(self, name: str, src_dir_path: str, code: str, include_code: str, color_sets: List[str]):
         """
         :param name: identifier that will be used to identify temporary TeX and PDF files resulting from this frame
         :param src_dir_path: path to the directory where the document containing the frame is located
         :param code: source code of the frame itself, encapsuled by \begin{frame} and \end{frame} commands
         :param include_code: optional LaTeX code snippet containing package includes
+        :param color_sets: codes that change the color scheme
         """
         if not code.lstrip().startswith(tokens.FRAME_BEGIN):
             raise FrameBeginError(f"Frame code should begin with \"{tokens.FRAME_BEGIN}\"")
@@ -50,8 +54,10 @@ class Frame:
         self._codes = [code]
         self._include_code = include_code
         self._src_dir = src_dir_path
+        self._color_sets = color_sets
 
-        self._documents = []
+        self._local_docs = []
+        self._global_docs = []
         self._current_page = -1
         self._current_opt = 0  # original appearance
         self._suggest_changes()
@@ -60,25 +66,25 @@ class Frame:
         """
         Compiles this frame as a standalone temporary document.
         """
-        self._documents.clear()
+        self._local_docs.clear()
         tmp_dir_path = create_temp_dir(self._src_dir)
         for opt_idx, code in enumerate(self._codes):
-            tmp_file_name = f"{self._name}_opt{opt_idx}.tex"
+            tmp_file_name = f"{self._name}_l{opt_idx}.tex"
             tmp_file_path = os.path.join(tmp_dir_path, tmp_file_name)
-            with open(tmp_file_path, "w") as tmp_file:
-                if self._include_code:
-                    tmp_file.write(self._include_code)
-                    tmp_file.write("\n")
-                tmp_file.write(tokens.DOC_BEGIN + "\n")
-                tmp_file.write(code)
-                tmp_file.write("\n" + tokens.DOC_END)
-
             try:
-                pdf_path = compile_tex(tmp_file_path)
-                self._documents.append(fitz.open(pdf_path))
-            except CompilationError as e:
+                self._local_docs.append(self._try_compile_code(code, tmp_file_path))
+            except BaseFrameCompilationError:
                 if opt_idx == 0:
-                    raise BaseFrameCompilationError(f'Compilation failed for frame "{tmp_file_name}"')
+                    raise
+                print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
+
+        # TODO make it faster: first document is the same in local & global vectors
+        for opt_idx, color_defs in enumerate(self._color_sets):
+            tmp_file_name = f"{self._name}_g{opt_idx}.tex"
+            tmp_file_path = os.path.join(tmp_dir_path, tmp_file_name)
+            try:
+                self._global_docs.append(self._try_compile_code(self._codes[0], tmp_file_path, color_defs))
+            except BaseFrameCompilationError:
                 print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
 
     def code(self) -> str:
@@ -95,31 +101,31 @@ class Frame:
 
     def next_page(self):
         """
-        :return: next page from the PDF file as list of PixMaps (first one is the original),
+        :return: next page from the PDF file as lists of PixMaps (first one is the original),
             or None if there is no next page.
         """
-        if not self._documents:
+        if not self._local_docs:
             self.compile()
 
         self._current_page += 1
-        if self._current_page < self._documents[self._current_opt].page_count:
+        if self._current_page >= self._local_docs[self._current_opt].page_count:
+            return None
 
-            return self._curr_page_as_pixmaps()
-        return None
+        return self._curr_page()
 
-    def prev_page(self):
+    def prev_page(self) -> Optional[PageInfo]:
         """
-        :return: previous page from the PDF file as list of PixMaps (first one is the original),
+        :return: previous page from the PDF file as lists of PixMaps (first one is the original),
             or None if there is no previous page.
         """
-        if not self._documents:
+        if not self._local_docs:
             self.compile()
 
         self._current_page -= 1
-        if self._current_page > -1:
-            return self._curr_page_as_pixmaps()
+        if self._current_page < 0:
+            return None
 
-        return None
+        return self._curr_page()
 
     def current_alternative(self) -> int:
         """
@@ -139,13 +145,34 @@ class Frame:
 
         self._current_opt = idx
 
-    def _curr_page_as_pixmaps(self):
-        pixmaps = []
-        for doc in self._documents:
-            zoom_factor = 4.0
-            mat = fitz.Matrix(zoom_factor, zoom_factor)
-            pixmaps.append(doc.load_page(self._current_page).get_pixmap(matrix=mat, alpha=True))
-        return pixmaps
+    def _try_compile_code(self, code: str, tmp_file_path: str, color_defs=None):
+        with open(tmp_file_path, "w") as tmp_file:
+            if self._include_code:
+                tmp_file.write(self._include_code + "\n")
+
+            if color_defs:
+                tmp_file.write(color_defs + "\n")
+
+            tmp_file.write(tokens.DOC_BEGIN + "\n")
+            tmp_file.write(code)
+            tmp_file.write("\n" + tokens.DOC_END)
+
+        try:
+            pdf_path = compile_tex(tmp_file_path)
+            return fitz.open(pdf_path)
+
+        except CompilationError as e:
+            raise BaseFrameCompilationError(f'Compilation failed for frame "{os.path.basename(tmp_file_path)}"')
+
+    def _curr_page(self) -> PageInfo:
+        local_improvements = [self._pixmap_from_document(doc) for doc in self._local_docs]
+        global_improvements = [self._pixmap_from_document(doc) for doc in self._global_docs]
+        return PageInfo(local_improvements, global_improvements)
+
+    def _pixmap_from_document(self, document):
+        zoom_factor = 4.0
+        mat = fitz.Matrix(zoom_factor, zoom_factor)
+        return document.load_page(self._current_page).get_pixmap(matrix=mat, alpha=True)
 
     def _suggest_changes(self):
         src_code = self.original_code()

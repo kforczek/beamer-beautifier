@@ -1,7 +1,11 @@
 
 import os
+from typing import Optional
+
 import src.beamer.tokens as tokens
 from src.beamer.frame import Frame
+from src.beamer.global_generator import get_random_color_set
+from src.beamer.page_info import PageInfo
 
 
 class NotBeamerPresentation(ValueError):
@@ -21,13 +25,14 @@ class BeamerDocument:
     def __init__(self, doc_path: str):
         self._path = doc_path
         self._check_path()
+        self._color_versions = [get_random_color_set() for _ in range(4)]
         self._split_frames()
 
         self._current_frame = -1
 
-    def next_page(self):
+    def next_page(self) -> Optional[PageInfo]:
         """
-        :return: next page from the document as list of PixMaps (first one is the original), or None if there is no next page.
+        :return: next page from the document as lists of PixMaps (first one is the original), or None if there is no next page.
         """
         if self._current_frame >= len(self._frames):
             return None
@@ -43,9 +48,9 @@ class BeamerDocument:
         self._current_frame += 1
         return self.next_page()
 
-    def prev_page(self):
+    def prev_page(self) -> Optional[PageInfo]:
         """
-        :return: previous page from the document as list of PixMaps (first one is the original), or None if there is no previous page.
+        :return: previous page from the document as lists of PixMaps (first one is the original), or None if there is no previous page.
         """
         if self._current_frame < 0:
             return None
@@ -128,5 +133,5 @@ class BeamerDocument:
             frame_code = f"{tokens.FRAME_BEGIN}{frame_code}{tokens.FRAME_END}\n"
             frame_filename = f"{doc_name}_frame{idx:0{idx_len}}"
 
-            frame = Frame(frame_filename, os.path.dirname(self._path), frame_code, self._header)
+            frame = Frame(frame_filename, os.path.dirname(self._path), frame_code, self._header, self._color_versions)
             self._frames.append(frame)
