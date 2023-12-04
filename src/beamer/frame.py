@@ -78,8 +78,9 @@ class Frame:
                     raise
                 print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
 
+        self._global_docs.append(self._try_compile_code(self._codes[0], os.path.join(tmp_dir_path, f"{self._name}_g0.tex")))
         # TODO make it faster: first document is the same in local & global vectors
-        for opt_idx, color_defs in enumerate(self._color_sets):
+        for opt_idx, color_defs in enumerate(self._color_sets, start=1):
             tmp_file_name = f"{self._name}_g{opt_idx}.tex"
             tmp_file_path = os.path.join(tmp_dir_path, tmp_file_name)
             try:

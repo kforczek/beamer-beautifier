@@ -46,6 +46,8 @@ class MainWindow(QtWidgets.QFrame):
         if not page:
             raise EmptyDocumentError("The document doesn't contain any pages, got nothing to display")
 
+        self._selected_local_opt = 0
+        self._selected_global_opt = 0
         self._local_highlighted_opt = None
         self._global_highlighted_opt = None
         self._changes_count = 0
@@ -64,9 +66,9 @@ class MainWindow(QtWidgets.QFrame):
         for idx, item in enumerate(thumbnail_items):
             dest_listview.addItem(item)
 
-            if idx == self._selected_opt:
+            if idx == self._selected_local_opt:
                 dest_listview.setCurrentItem(item)
-                self._local_highlighted_opt = self._selected_opt
+                self._local_highlighted_opt = self._selected_local_opt
 
     def _prev_page(self):
         page = self._document.prev_page()
@@ -92,56 +94,70 @@ class MainWindow(QtWidgets.QFrame):
         self._curr_global_improvements = [to_qt_pixmap(page_opt) for page_opt in page_info.global_improvements]
         self._global_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_global_improvements]
 
-        self._selected_opt = self._document.current_frame_alternative()
+        self._selected_local_opt = self._document.current_frame_alternative()
         self._display_page()
         self._load_thumbnails()
 
-    def _display_page(self):
-        option = self._local_highlighted_opt if self._local_highlighted_opt is not None else self._selected_opt
+    def _display_page(self, image_to_display=None):
+        if image_to_display is None:
+            image_to_display = self._curr_local_improvements[self._selected_local_opt]
+        #option = self._local_highlighted_opt if self._local_highlighted_opt is not None else self._selected_opt
         current_width = self._image_display.width()
         current_height = self._image_display.height()
-        pixmap = self._curr_local_improvements[option].scaled(
+        #pixmap = self._curr_local_improvements[option].scaled(
+        pixmap = image_to_display.scaled(
             current_width, current_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation
         )
         self._image_display.setPixmap(pixmap)
 
     def _local_thumbnail_selection_changed(self):
-        curr_item = self._local_thumbnails_view.currentItem()
-
-        try:
-            self._local_highlighted_opt = self._local_thumb_items.index(curr_item) if curr_item else None
-        except ValueError:
-            self._local_highlighted_opt = None
-
-        if self._local_highlighted_opt in (None, self._selected_opt):
-            if len(self._local_thumb_items) > self._selected_opt:
-                self._local_thumbnails_view.setCurrentItem(self._local_thumb_items[self._selected_opt])
-                self._local_highlighted_opt = self._selected_opt
-                self._handle_thumb_highlight()
-            return
-
-        # Another option has been highlighted
-        self._handle_thumb_highlight()
+        self._local_highlighted_opt = self._thumbnail_selection_changed(
+            self._curr_local_improvements,
+            self._local_thumbnails_view,
+            self._local_thumb_items,
+            self._selected_local_opt)
 
     def _global_thumbnail_selection_changed(self):
-        curr_item = self._global_thumbnails_view.currentItem()
+        self._global_highlighted_opt = self._thumbnail_selection_changed(
+            self._curr_global_improvements,
+            self._global_thumbnails_view,
+            self._global_thumb_items,
+            self._selected_global_opt)
+
+    def _thumbnail_selection_changed(self, improvements_list, thumbs_view: QtWidgets.QListView, thumb_items, curr_selected_opt: int) -> int:
+        """
+        Handles changes in highlighting of the thumbnails.
+        :return: Index of the highlighted thumbnail.
+        """
+        curr_item = thumbs_view.currentItem()
 
         try:
-            self._global_highlighted_opt = self._local_thumb_items.index(curr_item) if curr_item else None
+            highlighted_opt = thumb_items.index(curr_item) if curr_item else None
         except ValueError:
-            self._global_highlighted_opt = None
+            highlighted_opt = None
 
-    def _handle_thumb_highlight(self):
-        self._improve_button.setEnabled(self._local_highlighted_opt != self._selected_opt)
-        self._display_page()
+        if highlighted_opt in (None, curr_selected_opt):
+            if len(thumb_items) > curr_selected_opt:
+                thumbs_view.setCurrentItem(thumb_items[curr_selected_opt])
+                highlighted_opt = curr_selected_opt
+                self._handle_thumb_highlight(improvements_list, highlighted_opt)
+            return highlighted_opt
+
+        # Another option has been highlighted
+        self._handle_thumb_highlight(improvements_list, highlighted_opt)
+        return highlighted_opt
+
+    def _handle_thumb_highlight(self, improvements_list, highlighted_idx):
+        self._improve_button.setEnabled(self._local_highlighted_opt != self._selected_local_opt)  # TODO button fix (2 buttons?)
+        self._display_page(improvements_list[highlighted_idx])
 
     def _select_improvement(self):
-        if self._local_highlighted_opt == self._selected_opt:
+        if self._local_highlighted_opt == self._selected_local_opt:
             return
 
-        self._selected_opt = self._local_highlighted_opt
-        self._document.select_alternative(self._selected_opt)
-        self._update_save_button_state(self._selected_opt)
+        self._selected_local_opt = self._local_highlighted_opt
+        self._document.select_alternative(self._selected_local_opt)
+        self._update_save_button_state(self._selected_local_opt)
         self._handle_thumb_highlight()
 
     def _save_changes(self):
