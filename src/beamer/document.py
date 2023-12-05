@@ -1,11 +1,10 @@
-
 import os
 from typing import Optional
 
-import src.beamer.tokens as tokens
-from src.beamer.frame import Frame
-from src.beamer.global_generator import get_random_color_set
-from src.beamer.page_info import PageInfo
+from . import tokens
+from .frame import Frame
+from .page_info import PageInfo
+from src.beautifier.color_generator import get_random_color_set
 
 
 class NotBeamerPresentation(ValueError):

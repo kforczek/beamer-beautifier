@@ -1,6 +1,6 @@
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
-from src.gui.widgets import MainSplitter
+from .widgets import MainSplitter
 from src.beamer.document import BeamerDocument
 from src.beamer.page_info import PageInfo
 

@@ -1,6 +1,6 @@
-from typing import Optional, List
-from src.beamer.scanner import TokenScanner
-import src.beamer.tokens as tokens
+from typing import Optional
+from .scanner import TokenScanner
+from ..beamer import tokens
 
 
 class FrameImprovement:

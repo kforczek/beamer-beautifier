@@ -1,5 +1,4 @@
-import pytest
-from src.beamer.scanner import TokenScanner
+from src.beautifier.scanner import TokenScanner
 
 
 def test_scanner_1_token():

@@ -1,4 +1,4 @@
-from src.beamer.frame_generator import ListToTable
+from src.beautifier.frame_generator import ListToTable
 
 
 def test_ListToTable_improve():

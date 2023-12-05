@@ -1,5 +1,4 @@
 from PyQt5 import QtWidgets, QtCore
-from typing import Callable
 
 
 class MainSplitter(QtWidgets.QSplitter):

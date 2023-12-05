@@ -2,10 +2,10 @@ import os
 from typing import List, Optional
 
 import fitz
-import src.beamer.tokens as tokens
-from src.beamer.compilation import compile_tex, create_temp_dir, CompilationError
-from src.beamer.frame_generator import get_improvements
-from src.beamer.page_info import PageInfo
+from . import tokens
+from .compilation import compile_tex, create_temp_dir, CompilationError
+from .page_info import PageInfo
+from src.beautifier.frame_generator import get_improvements
 
 
 class FrameBeginError(Exception):
