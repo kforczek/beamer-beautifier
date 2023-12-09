@@ -6,6 +6,7 @@ from . import tokens
 from .compilation import compile_tex, create_temp_dir, CompilationError
 from .page_info import PageInfo
 from src.beautifier.frame_generator import get_improvements
+from src.beautifier.background_generator import get_backgrounds
 
 
 class FrameBeginError(Exception):
@@ -60,7 +61,10 @@ class Frame:
         self._global_docs = []
         self._current_page = -1
         self._current_opt = 0  # original appearance
+
+        self.compile() #TODO compile only original doc
         self._suggest_changes()
+        self._suggest_backgrounds()
 
     def compile(self):
         """
@@ -181,3 +185,10 @@ class Frame:
             improved_code = improvement.improve(src_code)
             if improved_code:
                 self._codes.append(improved_code)
+
+    def _suggest_backgrounds(self):
+        # TODO
+        rect = self._local_docs[0].load_page(0).bound()
+        backgrounds = get_backgrounds(os.path.join(self._src_dir, "backgrounds"),
+                                      (rect.width, rect.height), 0, 0)  # TODO frame idx etc
+

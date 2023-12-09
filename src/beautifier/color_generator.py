@@ -13,25 +13,27 @@ class RGBRandomizer:
 
 class RandomColor:
     """Represents a random RGB color definition."""
-    def __init__(self, name: str, randomizer=RGBRandomizer()):
-        self._name = name
+    def __init__(self, randomizer=RGBRandomizer()):
         self._red = randomizer.red
         self._green = randomizer.green
         self._blue = randomizer.blue
 
-    def name(self):
-        return self._name
+    def as_tuple(self):
+        """
+        :return: Tuple (r, g, b) representing the color.
+        """
+        return self._red, self._green, self._blue
 
-    def latex_definition(self) -> str:
+    def latex_definition(self, col_name) -> str:
         """
         :return: LaTeX statement defining the color.
         """
-        return f"\\definecolor{{{self._name}}}{{RGB}}{{{self._red},{self._green},{self._blue}}}"
+        return f"\\definecolor{{{col_name}}}{{RGB}}{{{self._red},{self._green},{self._blue}}}"
 
     def is_dark(self) -> bool:
         return self._red + self._green + self._blue < 3*128
 
-    def similar_color(self, name: str, change: int):
+    def similar_color(self, change: int):
         """
         :return: A similar color with its RGB values randomized in the range [current+change, current]
         if change is less than 0 or in the range [current, current+change] if the change is more than 0.
@@ -51,30 +53,30 @@ class RandomColor:
             g_high = min(255, self._green + change)
             b_high = min(255, self._blue + change)
 
-        return RandomColor(name, RGBRandomizer(r_low, r_high, g_low, g_high, b_low, b_high))
+        return RandomColor(RGBRandomizer(r_low, r_high, g_low, g_high, b_low, b_high))
 
 
-def palette_color_defs(color1, color2, color3, color4) -> str:
+def palette_color_defs(color1, name1, color2, name2, color3, name3, color4, name4) -> str:
     defs = ""
-    for name, col in (('primary', color1), ('secondary', color2), ('tertiary', color3), ('quaternary', color4)):
-        defs += f"\\setbeamercolor{{palette {name}}}{{bg={col.name()}, fg={'white' if col.is_dark() else 'black'}}}\n"
+    for pal_name, col, col_name in (('primary', color1, name1), ('secondary', color2, name2), ('tertiary', color3, name3), ('quaternary', color4, name4)):
+        defs += f"\\setbeamercolor{{palette {pal_name}}}{{bg={col_name}, fg={'white' if col.is_dark() else 'black'}}}\n"
     return defs[:-1]
 
 
 def get_random_color_set() -> str:
-    color1 = RandomColor("RandomColor1", RGBRandomizer(50, 200, 50, 200, 50, 200))
-    color2 = color1.similar_color("RandomColor2", 20)
-    color3 = color2.similar_color("RandomColor3", 30)
-    color4 = color3.similar_color("RandomColor4", 20)
+    color1 = RandomColor(RGBRandomizer(50, 200, 50, 200, 50, 200))
+    color2 = color1.similar_color(20)
+    color3 = color2.similar_color(30)
+    color4 = color3.similar_color(20)
 
-    palette_defs = palette_color_defs(color1, color2, color3, color4)
+    palette_defs = palette_color_defs(color1, "RandomColor1", color2, "RandomColor2", color3, "RandomColor3", color4, "RandomColor4")
     structure_def = "\\setbeamercolor{structure}{fg=RandomColor1}"
 
     return f"""
-{color1.latex_definition()}
-{color2.latex_definition()}
-{color3.latex_definition()}
-{color4.latex_definition()}
+{color1.latex_definition("RandomColor1")}
+{color2.latex_definition("RandomColor2")}
+{color3.latex_definition("RandomColor3")}
+{color4.latex_definition("RandomColor4")}
 {palette_defs}
 {structure_def}
     """
