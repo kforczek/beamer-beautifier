@@ -36,6 +36,7 @@ class RandomCirclesBackground(BackgroundGenerator):
     CIRCLE_RADIUS_MIN = 30
     CIRCLE_RADIUS_MAX = 60
     CIRCLES_OPACITY = 128
+    MAX_FAILED_PLACEMENTS = 5
 
     class __Circle:
         BOUNDING_BOX_SIZE = 30
@@ -45,8 +46,8 @@ class RandomCirclesBackground(BackgroundGenerator):
             self.bottom_right = (xloc+radius, yloc+radius)
 
         def collides(self, other):
-            return is_farther(self.bottom_right, other.top_left, self.BOUNDING_BOX_SIZE) \
-                or is_farther(other.bottom_right, self.top_left, self.BOUNDING_BOX_SIZE)
+            return is_farther(self.bottom_right, other.top_left, self.BOUNDING_BOX_SIZE) and is_farther(other.bottom_right, self.top_left, self.BOUNDING_BOX_SIZE) \
+                or is_farther(other.bottom_right, self.top_left, self.BOUNDING_BOX_SIZE) and is_farther(self.bottom_right, other.top_left, self.BOUNDING_BOX_SIZE)
 
     def generate_background(self, file_path: str, resolution: Tuple[int, int],
                             progress_info: Optional[FrameProgressInfo]):
@@ -55,7 +56,7 @@ class RandomCirclesBackground(BackgroundGenerator):
         circle_defs = self._place_random_circles(resolution)
         self._randomize_color()
 
-        img = Image.new(mode="RGB", size=resolution)
+        img = Image.new(mode="RGB", size=resolution, color="white")
         self._draw_circles(img, circle_defs)
 
         img.save(file_path)
@@ -64,7 +65,7 @@ class RandomCirclesBackground(BackgroundGenerator):
         circle_defs = set()
         margin = self.__Circle.BOUNDING_BOX_SIZE
         failed_placements = 0
-        while failed_placements < 5:
+        while failed_placements < self.MAX_FAILED_PLACEMENTS:
             radius = random.randint(self.CIRCLE_RADIUS_MIN, self.CIRCLE_RADIUS_MAX)
             xloc = random.randint(margin+radius, resolution[0]-radius-margin)
             yloc = random.randint(margin+radius, resolution[1]-radius-margin)
@@ -73,6 +74,8 @@ class RandomCirclesBackground(BackgroundGenerator):
             if not self._is_circle_valid(circle, circle_defs):
                 failed_placements += 1
                 continue
+            else:
+                failed_placements = 0
 
             circle_defs.add(circle)
         return circle_defs
@@ -94,11 +97,11 @@ class RandomCirclesBackground(BackgroundGenerator):
             draw.ellipse((circle.top_left, circle.bottom_right), fill=(col[0], col[1], col[2], self.CIRCLES_OPACITY))
 
 
-def get_backgrounds() -> set[BackgroundGenerator]:
-    backgrounds = set()
+def get_backgrounds() -> list[BackgroundGenerator]:
+    backgrounds = list()
 
-    for idx in range(4):
-        backgrounds.add(RandomCirclesBackground())
+    for _ in range(4):
+        backgrounds.append(RandomCirclesBackground())
 
     return backgrounds
 

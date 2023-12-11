@@ -196,5 +196,5 @@ class Frame:
         for background in get_backgrounds():
             file_path = os.path.join(dir_path, f"{self._name}_bg{bg_idx}.png")
             background.generate_background(file_path, (rect.width, rect.height), None) # TODO frame idx etc
-
+            bg_idx += 1
         # TODO use this background
