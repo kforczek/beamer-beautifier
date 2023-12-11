@@ -6,6 +6,7 @@ from . import tokens
 from .compilation import compile_tex, create_temp_dir, CompilationError
 from .page_info import PageInfo
 from src.beautifier.frame_generator import get_improvements
+from src.beautifier.background_generator import get_backgrounds
 
 
 class FrameBeginError(Exception):
@@ -60,6 +61,7 @@ class Frame:
         self._global_docs = []
         self._current_page = -1
         self._current_opt = 0  # original appearance
+        self._tmp_dir_path = create_temp_dir(self._src_dir)
         self._suggest_changes()
 
     def compile(self):
@@ -67,10 +69,9 @@ class Frame:
         Compiles this frame as a standalone temporary document.
         """
         self._local_docs.clear()
-        tmp_dir_path = create_temp_dir(self._src_dir)
         for opt_idx, code in enumerate(self._codes):
             tmp_file_name = f"{self._name}_l{opt_idx}.tex"
-            tmp_file_path = os.path.join(tmp_dir_path, tmp_file_name)
+            tmp_file_path = os.path.join(self._tmp_dir_path, tmp_file_name)
             try:
                 self._local_docs.append(self._try_compile_code(code, tmp_file_path))
             except BaseFrameCompilationError:
@@ -78,15 +79,17 @@ class Frame:
                     raise
                 print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
 
-        self._global_docs.append(self._try_compile_code(self._codes[0], os.path.join(tmp_dir_path, f"{self._name}_g0.tex")))
+        self._global_docs.append(self._try_compile_code(self._codes[0], os.path.join(self._tmp_dir_path, f"{self._name}_g0.tex")))
         # TODO make it faster: first document is the same in local & global vectors
         for opt_idx, color_defs in enumerate(self._color_sets, start=1):
             tmp_file_name = f"{self._name}_g{opt_idx}.tex"
-            tmp_file_path = os.path.join(tmp_dir_path, tmp_file_name)
+            tmp_file_path = os.path.join(self._tmp_dir_path, tmp_file_name)
             try:
                 self._global_docs.append(self._try_compile_code(self._codes[0], tmp_file_path, color_defs))
             except BaseFrameCompilationError:
                 print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
+
+        self._generate_backgrounds()
 
     def code(self) -> str:
         """
@@ -162,7 +165,7 @@ class Frame:
             pdf_path = compile_tex(tmp_file_path)
             return fitz.open(pdf_path)
 
-        except CompilationError as e:
+        except CompilationError:
             raise BaseFrameCompilationError(f'Compilation failed for frame "{os.path.basename(tmp_file_path)}"')
 
     def _curr_page(self) -> PageInfo:
@@ -181,3 +184,17 @@ class Frame:
             improved_code = improvement.improve(src_code)
             if improved_code:
                 self._codes.append(improved_code)
+
+    def _generate_backgrounds(self):
+        rect = self._local_docs[0].load_page(0).bound()
+        dir_path = os.path.join(self._tmp_dir_path, "res")
+
+        if not os.path.exists(dir_path):
+            os.mkdir(dir_path)
+
+        bg_idx = 0
+        for background in get_backgrounds():
+            file_path = os.path.join(dir_path, f"{self._name}_bg{bg_idx}.png")
+            background.generate_background(file_path, (rect.width, rect.height), None) # TODO frame idx etc
+
+        # TODO use this background
