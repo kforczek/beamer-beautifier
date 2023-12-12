@@ -18,7 +18,7 @@ class MainWindow(QtWidgets.QFrame):
         self._doc_folder_path = doc_folder_path
 
     def _init_ui(self):
-        self.setGeometry(100, 100, 1480, 870)
+        self.setGeometry(100, 100, 1500, 870)
         self.setWindowTitle('Beamer Beautifier')
 
         layout = QtWidgets.QHBoxLayout()
@@ -30,14 +30,14 @@ class MainWindow(QtWidgets.QFrame):
         self._image_display = splitter.left_pane.image_display
         self._improve_button = splitter.left_pane.function_buttons.improve_button
         self._save_button = splitter.left_pane.function_buttons.save_button
-        self._local_thumbnails_view = splitter.right_pane.top_thumbs_view
-        self._global_thumbnails_view = splitter.right_pane.bottom_thumbs_view
+        self._frame_thumbs_view = splitter.right_pane.frame_tab.thumbs_view
+        self._global_thumbs_view = splitter.right_pane.global_tab.thumbs_view
 
         splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
         splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
         self._improve_button.clicked.connect(self._select_improvement)
-        self._local_thumbnails_view.itemSelectionChanged.connect(self._local_thumbnail_selection_changed)
-        self._global_thumbnails_view.itemSelectionChanged.connect(self._global_thumbnail_selection_changed)
+        self._frame_thumbs_view.itemSelectionChanged.connect(self._local_thumbnail_selection_changed)
+        self._global_thumbs_view.itemSelectionChanged.connect(self._global_thumbnail_selection_changed)
         self._save_button.clicked.connect(self._save_changes)
 
     def _init_document_logic(self, document: BeamerDocument):
@@ -56,8 +56,8 @@ class MainWindow(QtWidgets.QFrame):
         self._load_page(page)
 
     def _load_thumbnails(self):
-        self._load_specific_thumbnails(self._local_thumbnails_view, self._local_thumb_items)
-        self._load_specific_thumbnails(self._global_thumbnails_view, self._global_thumb_items)
+        self._load_specific_thumbnails(self._frame_thumbs_view, self._local_thumb_items)
+        self._load_specific_thumbnails(self._global_thumbs_view, self._global_thumb_items)
 
     def _load_specific_thumbnails(self, dest_listview, thumbnail_items):
         while dest_listview.count() > 0:
@@ -113,14 +113,14 @@ class MainWindow(QtWidgets.QFrame):
     def _local_thumbnail_selection_changed(self):
         self._local_highlighted_opt = self._thumbnail_selection_changed(
             self._curr_local_improvements,
-            self._local_thumbnails_view,
+            self._frame_thumbs_view,
             self._local_thumb_items,
             self._selected_local_opt)
 
     def _global_thumbnail_selection_changed(self):
         self._global_highlighted_opt = self._thumbnail_selection_changed(
             self._curr_global_improvements,
-            self._global_thumbnails_view,
+            self._global_thumbs_view,
             self._global_thumb_items,
             self._selected_global_opt)
 

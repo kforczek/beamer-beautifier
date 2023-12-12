@@ -21,7 +21,7 @@ class MainSplitterLeftPane(QtWidgets.QWidget):
         self.setLayout(layout)
 
         self.image_display = ImageDisplay(self)
-        self.function_buttons = FunctionButtonsLayout()
+        self.function_buttons = GlobalButtonsLayout()
         self.navigation_buttons = NavigationButtonsLayout()
 
         layout.addWidget(self.image_display)
@@ -29,25 +29,17 @@ class MainSplitterLeftPane(QtWidgets.QWidget):
         layout.addLayout(self.navigation_buttons)
 
 
-class MainSplitterRightPane(QtWidgets.QWidget):
+class MainSplitterRightPane(QtWidgets.QTabWidget):
     def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
 
-        layout = QtWidgets.QVBoxLayout()
-        self.setLayout(layout)
+        self.frame_tab = ImprovementsTab(self)
+        self.background_tab = ImprovementsTab(self)
+        self.global_tab = ImprovementsTab(self)
 
-        self.top_thumbs_view = ThumbnailsListView(self)
-        self.bottom_thumbs_view = ThumbnailsListView(self)
-        self.global_thumbs_header = GlobalThumbnailsHeaderLayout()
-
-        top_label = QtWidgets.QLabel(self)
-        top_label.setText("Frame changes:")
-
-        layout.addWidget(top_label)
-        layout.addWidget(self.top_thumbs_view)
-        layout.addSpacing(10)
-        layout.addLayout(self.global_thumbs_header)
-        layout.addWidget(self.bottom_thumbs_view)
+        self.addTab(self.frame_tab, "Content alignment")
+        self.addTab(self.background_tab, "Background")
+        self.addTab(self.global_tab, "Colors (global)")
 
 
 class NavigationButtonsLayout(QtWidgets.QHBoxLayout):
@@ -62,7 +54,7 @@ class NavigationButtonsLayout(QtWidgets.QHBoxLayout):
         self.addWidget(self.next_button)
 
 
-class FunctionButtonsLayout(QtWidgets.QHBoxLayout):
+class GlobalButtonsLayout(QtWidgets.QHBoxLayout):
     def __init__(self):
         super().__init__()
 
@@ -78,17 +70,30 @@ class FunctionButtonsLayout(QtWidgets.QHBoxLayout):
         self.setAlignment(self.improve_button, QtCore.Qt.AlignmentFlag.AlignRight)
 
 
-class GlobalThumbnailsHeaderLayout(QtWidgets.QHBoxLayout):
+class ImprovementsTab(QtWidgets.QWidget):
+    def __init__(self, parent: QtWidgets.QWidget):
+        super().__init__(parent)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        self.setLayout(layout)
+
+        self.thumbs_view = ThumbnailsListView(self)
+        self.function_buttons = FunctionButtonsLayout()
+
+        layout.addWidget(self.thumbs_view)
+        layout.addLayout(self.function_buttons)
+
+
+class FunctionButtonsLayout(QtWidgets.QHBoxLayout):
     def __init__(self):
         super().__init__()
 
-        label = QtWidgets.QLabel()
-        label.setText("Presentation (global) changes:")
+        self.choose_button = QtWidgets.QPushButton("Choose this version")
         self.regenerate_button = QtWidgets.QPushButton("Regenerate")
 
-        self.addWidget(label)
+        self.addWidget(self.choose_button)
         self.addWidget(self.regenerate_button)
-        self.setAlignment(label, QtCore.Qt.AlignmentFlag.AlignLeft)
+        self.setAlignment(self.choose_button, QtCore.Qt.AlignmentFlag.AlignLeft)
         self.setAlignment(self.regenerate_button, QtCore.Qt.AlignmentFlag.AlignRight)
 
 
