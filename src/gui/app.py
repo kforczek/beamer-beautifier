@@ -31,12 +31,14 @@ class MainWindow(QtWidgets.QFrame):
         self._improve_button = splitter.left_pane.function_buttons.improve_button
         self._save_button = splitter.left_pane.function_buttons.save_button
         self._frame_thumbs_view = splitter.right_pane.frame_tab.thumbs_view
+        self._background_thumbs_view = splitter.right_pane.background_tab.thumbs_view
         self._global_thumbs_view = splitter.right_pane.global_tab.thumbs_view
 
         splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
         splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
         self._improve_button.clicked.connect(self._select_improvement)
         self._frame_thumbs_view.itemSelectionChanged.connect(self._local_thumbnail_selection_changed)
+        self._background_thumbs_view.itemSelectionChanged.connect(self._background_thumbnail_selection_changed)
         self._global_thumbs_view.itemSelectionChanged.connect(self._global_thumbnail_selection_changed)
         self._save_button.clicked.connect(self._save_changes)
 
@@ -47,16 +49,19 @@ class MainWindow(QtWidgets.QFrame):
             raise EmptyDocumentError("The document doesn't contain any pages, got nothing to display")
 
         self._selected_local_opt = 0
+        self._selected_background_opt = 0
         self._selected_global_opt = 0
         self._local_highlighted_opt = None
         self._global_highlighted_opt = None
         self._changes_count = 0
         self._local_thumb_items = []
+        self._background_thumb_items = []
         self._global_thumb_items = []
         self._load_page(page)
 
     def _load_thumbnails(self):
         self._load_specific_thumbnails(self._frame_thumbs_view, self._local_thumb_items)
+        self._load_specific_thumbnails(self._background_thumbs_view, self._background_thumb_items)
         self._load_specific_thumbnails(self._global_thumbs_view, self._global_thumb_items)
 
     def _load_specific_thumbnails(self, dest_listview, thumbnail_items):
@@ -86,10 +91,14 @@ class MainWindow(QtWidgets.QFrame):
 
     def _load_page(self, page_info: PageInfo):
         self._local_thumb_items.clear()
+        self._background_thumb_items.clear()
         self._global_thumb_items.clear()
 
-        self._curr_local_improvements = [to_qt_pixmap(page_opt) for page_opt in page_info.local_improvements]
+        self._curr_local_improvements = [to_qt_pixmap(page_opt) for page_opt in page_info.frame_improvements]
         self._local_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_local_improvements]
+
+        self._curr_background_improvements = [to_qt_pixmap(page_opt) for page_opt in page_info.background_improvements]
+        self._background_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_background_improvements]
 
         self._curr_global_improvements = [to_qt_pixmap(page_opt) for page_opt in page_info.global_improvements]
         self._global_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_global_improvements]
@@ -116,6 +125,13 @@ class MainWindow(QtWidgets.QFrame):
             self._frame_thumbs_view,
             self._local_thumb_items,
             self._selected_local_opt)
+
+    def _background_thumbnail_selection_changed(self):
+        self._background_highlighted_opt = self._thumbnail_selection_changed(
+            self._curr_background_improvements,
+            self._background_thumbs_view,
+            self._background_thumb_items,
+            self._selected_background_opt)
 
     def _global_thumbnail_selection_changed(self):
         self._global_highlighted_opt = self._thumbnail_selection_changed(

@@ -52,13 +52,18 @@ class Frame:
             raise FrameNameError("Frame name cannot contain non-alphanumerical characters except underscores")
 
         self._name = name
-        self._codes = [code]
+
+        self._frame_codes = [code]
+        self._background_codes = [code]
+
         self._include_code = include_code
         self._src_dir = src_dir_path
         self._color_sets = color_sets
 
-        self._local_docs = []
+        self._frame_docs = []
+        self._background_docs = []
         self._global_docs = []
+
         self._current_page = -1
         self._current_opt = 0  # original appearance
         self._tmp_dir_path = create_temp_dir(self._src_dir)
@@ -68,51 +73,62 @@ class Frame:
         """
         Compiles this frame as a standalone temporary document.
         """
-        self._local_docs.clear()
-        for opt_idx, code in enumerate(self._codes):
+        self._frame_docs.clear()
+        for opt_idx, code in enumerate(self._frame_codes):
             tmp_file_name = f"{self._name}_l{opt_idx}.tex"
             tmp_file_path = os.path.join(self._tmp_dir_path, tmp_file_name)
             try:
-                self._local_docs.append(self._try_compile_code(code, tmp_file_path))
+                self._frame_docs.append(self._try_compile_code(code, tmp_file_path))
             except BaseFrameCompilationError:
                 if opt_idx == 0:
                     raise
                 print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
 
-        self._global_docs.append(self._try_compile_code(self._codes[0], os.path.join(self._tmp_dir_path, f"{self._name}_g0.tex")))
+        self._global_docs.append(self._try_compile_code(self._frame_codes[0], os.path.join(self._tmp_dir_path, f"{self._name}_g0.tex")))
         # TODO make it faster: first document is the same in local & global vectors
         for opt_idx, color_defs in enumerate(self._color_sets, start=1):
             tmp_file_name = f"{self._name}_g{opt_idx}.tex"
             tmp_file_path = os.path.join(self._tmp_dir_path, tmp_file_name)
             try:
-                self._global_docs.append(self._try_compile_code(self._codes[0], tmp_file_path, color_defs))
+                self._global_docs.append(self._try_compile_code(self._frame_codes[0], tmp_file_path, color_defs))
             except BaseFrameCompilationError:
                 print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
 
         self._generate_backgrounds()
 
+        # TODO make it faster: first document is the same in local & global vectors
+        for opt_idx, code in enumerate(self._background_codes):
+            tmp_file_name = f"{self._name}_bg{opt_idx}.tex"
+            tmp_file_path = os.path.join(self._tmp_dir_path, tmp_file_name)
+            try:
+                self._background_docs.append(self._try_compile_code(code, tmp_file_path))
+            except BaseFrameCompilationError:
+                if opt_idx == 0:
+                    raise
+                print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
+
     def code(self) -> str:
         """
         :return: LaTeX code of the frame (in currently selected version).
         """
-        return self._codes[self._current_opt]
+        return self._frame_codes[self._current_opt]
 
     def original_code(self) -> str:
         """
         :return: LaTeX code of the original frame, regardless of current selection.
         """
-        return self._codes[0]
+        return self._frame_codes[0]
 
     def next_page(self):
         """
         :return: next page from the PDF file as lists of PixMaps (first one is the original),
             or None if there is no next page.
         """
-        if not self._local_docs:
+        if not self._frame_docs:
             self.compile()
 
         self._current_page += 1
-        if self._current_page >= self._local_docs[self._current_opt].page_count:
+        if self._current_page >= self._frame_docs[self._current_opt].page_count:
             return None
 
         return self._curr_page()
@@ -122,7 +138,7 @@ class Frame:
         :return: previous page from the PDF file as lists of PixMaps (first one is the original),
             or None if there is no previous page.
         """
-        if not self._local_docs:
+        if not self._frame_docs:
             self.compile()
 
         self._current_page -= 1
@@ -143,9 +159,9 @@ class Frame:
         by prev_page() and next_page() methods).
         :param idx: index of the alternative frame to be selected
         """
-        if idx >= len(self._codes) or idx < 0:
+        if idx >= len(self._frame_codes) or idx < 0:
             raise InvalidAlternativeIndex(f"Invalid index of the frame alternative: {idx} "
-                                          f"(correct index range: 0-{len(self._codes)-1})")
+                                          f"(correct index range: 0-{len(self._frame_codes) - 1})")
 
         self._current_opt = idx
 
@@ -169,9 +185,10 @@ class Frame:
             raise BaseFrameCompilationError(f'Compilation failed for frame "{os.path.basename(tmp_file_path)}"')
 
     def _curr_page(self) -> PageInfo:
-        local_improvements = [self._pixmap_from_document(doc) for doc in self._local_docs]
+        frame_improvements = [self._pixmap_from_document(doc) for doc in self._frame_docs]
+        bg_improvements = [self._pixmap_from_document(doc) for doc in self._background_docs]
         global_improvements = [self._pixmap_from_document(doc) for doc in self._global_docs]
-        return PageInfo(local_improvements, global_improvements)
+        return PageInfo(frame_improvements, bg_improvements, global_improvements)
 
     def _pixmap_from_document(self, document):
         zoom_factor = 4.0
@@ -183,10 +200,10 @@ class Frame:
         for improvement in self._IMPROVEMENTS:
             improved_code = improvement.improve(src_code)
             if improved_code:
-                self._codes.append(improved_code)
+                self._frame_codes.append(improved_code)
 
     def _generate_backgrounds(self):
-        rect = self._local_docs[0].load_page(0).bound()
+        rect = self._frame_docs[0].load_page(0).bound()
         dir_path = os.path.join(self._tmp_dir_path, "res")
 
         if not os.path.exists(dir_path):
@@ -197,4 +214,9 @@ class Frame:
             file_path = os.path.join(dir_path, f"{self._name}_bg{bg_idx}.png")
             background.generate_background(file_path, (rect.width, rect.height), None) # TODO frame idx etc
             bg_idx += 1
-        # TODO use this background
+
+            bg_include_stmt = r"""\setbeamertemplate{background} 
+{
+    \includegraphics[width=\paperwidth,height=\paperheight]{""" + file_path + "}\n}"
+
+            self._background_codes.append(f"{{\n{bg_include_stmt}\n{self._background_codes[0]}\n}}")
