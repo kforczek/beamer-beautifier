@@ -21,12 +21,102 @@ class FrameNameError(Exception):
     pass
 
 
-class BaseFrameCompilationError(CompilationError):
-    pass
-
-
 class InvalidAlternativeIndex(ValueError):
     pass
+
+
+class FrameVersion:
+    """A single option of how the frame can look."""
+    def __init__(self, code: str, tmp_doc_path: str):
+        self._code = code
+        self._tmp_doc_path = tmp_doc_path
+        self._compiled_doc = None
+
+    def doc(self):
+        if not self._compiled_doc:
+            self._compile()
+
+        return self._compiled_doc
+
+    def _compile(self):
+        try:
+            with open(self._tmp_doc_path, "w") as tmp_file:
+                tmp_file.write(self._code)
+            pdf_path = compile_tex(self._tmp_doc_path)
+            self._compiled_doc = fitz.open(pdf_path)
+        except CompilationError:
+            print(f'Failed to compile improvement proposal: "{self._tmp_doc_path}"; will be ignored.')
+
+
+class VersionsContainer:
+    def __init__(self, base_name: str, tmp_dir_path: str, tmp_doc_prefix: str):
+        self._base_name = base_name
+        self._tmp_dir_path = tmp_dir_path
+        self._prefix = tmp_doc_prefix
+        self._versions = []
+        self._current_opt = 0
+        self._index_gen = 1
+
+    def __getitem__(self, item):
+        return self._versions[item]
+
+    def add(self, improved_code: str):
+        filename = f"{self._base_name}_{self._prefix}{self._index_gen}.tex"
+        filepath = os.path.join(self._tmp_dir_path, filename)
+        self._versions.append(FrameVersion(improved_code, filepath))
+        self._index_gen += 1
+
+    def current_version(self):
+        """
+        :return: A FrameVersion that corresponds to current selection.
+        """
+        return self._versions[self._current_opt]
+
+    def select_alternative(self, idx: int):
+        """
+        :param idx: index of the alternative version to be selected
+        """
+        if idx >= len(self._versions) or idx < 0:
+            raise InvalidAlternativeIndex(f"Invalid index of the frame alternative: {idx} "
+                                          f"(correct index range: 0-{len(self._versions) - 1})")
+        self._current_opt = idx
+
+
+class PageManager:
+    """Isolated paging abstraction for all code versions (original and with various improvements)."""
+    def __init__(self, original_version: FrameVersion, frame_name: str, tmp_dir_path: str):
+        self.local_versions = VersionsContainer(frame_name, tmp_dir_path, "l")
+        self.background_versions = VersionsContainer(frame_name, tmp_dir_path, "b")
+        self.global_versions = VersionsContainer(frame_name, tmp_dir_path, "g")
+        self.original_version = original_version
+
+        self._current_page = -1
+
+    def next_page(self) -> Optional[PageInfo]:
+        self._current_page += 1
+        if self._current_page >= self.background_versions.current_version().doc().page_count:
+            return None
+
+        return self._curr_page()
+
+    def prev_page(self) -> Optional[PageInfo]:
+        self._current_page -= 1
+        if self._current_page < 0:
+            return None
+
+        return self._curr_page()
+
+    def _curr_page(self) -> PageInfo:
+        original_page = self._pixmap_from_document(self.original_version.doc())
+        frame_improvements = [self._pixmap_from_document(version.doc()) for version in self.local_versions]
+        bg_improvements = [self._pixmap_from_document(version.doc()) for version in self.background_versions]
+        global_improvements = [self._pixmap_from_document(version.doc()) for version in self.global_versions]
+        return PageInfo(original_page, frame_improvements, bg_improvements, global_improvements)
+
+    def _pixmap_from_document(self, document):
+        zoom_factor = 4.0
+        mat = fitz.Matrix(zoom_factor, zoom_factor)
+        return document.load_page(self._current_page).get_pixmap(matrix=mat, alpha=True)
 
 
 class Frame:
@@ -53,105 +143,47 @@ class Frame:
 
         self._name = name
 
-        self._frame_codes = [code]
-        self._background_codes = [code]
-
+        self._original_code = code
         self._include_code = include_code
+
         self._src_dir = src_dir_path
-        self._color_sets = color_sets
-
-        self._frame_docs = []
-        self._background_docs = []
-        self._global_docs = []
-
-        self._current_page = -1
-        self._current_opt = 0  # original appearance
         self._tmp_dir_path = create_temp_dir(self._src_dir)
-        self._suggest_changes()
 
-    def compile(self):
-        """
-        Compiles this frame as a standalone temporary document.
-        """
-        self._frame_docs.clear()
-        for opt_idx, code in enumerate(self._frame_codes):
-            tmp_file_name = f"{self._name}_l{opt_idx}.tex"
-            tmp_file_path = os.path.join(self._tmp_dir_path, tmp_file_name)
-            try:
-                self._frame_docs.append(self._try_compile_code(code, tmp_file_path))
-            except BaseFrameCompilationError:
-                if opt_idx == 0:
-                    raise
-                print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
+        org_filepath = os.path.join(self._tmp_dir_path, f"{self._name}_org.tex")
+        original_version = FrameVersion(full_code(include_code, code), org_filepath)
+        self._page_mgr = PageManager(original_version, self._name, self._tmp_dir_path)
 
-        self._global_docs.append(self._try_compile_code(self._frame_codes[0], os.path.join(self._tmp_dir_path, f"{self._name}_g0.tex")))
-        # TODO make it faster: first document is the same in local & global vectors
-        for opt_idx, color_defs in enumerate(self._color_sets, start=1):
-            tmp_file_name = f"{self._name}_g{opt_idx}.tex"
-            tmp_file_path = os.path.join(self._tmp_dir_path, tmp_file_name)
-            try:
-                self._global_docs.append(self._try_compile_code(self._frame_codes[0], tmp_file_path, color_defs))
-            except BaseFrameCompilationError:
-                print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
-
-        self._generate_backgrounds()
-
-        # TODO make it faster: first document is the same in local & global vectors
-        for opt_idx, code in enumerate(self._background_codes):
-            tmp_file_name = f"{self._name}_bg{opt_idx}.tex"
-            tmp_file_path = os.path.join(self._tmp_dir_path, tmp_file_name)
-            try:
-                self._background_docs.append(self._try_compile_code(code, tmp_file_path))
-            except BaseFrameCompilationError:
-                if opt_idx == 0:
-                    raise
-                print(f'Failed to compile improvement proposal: "{tmp_file_name}"; will be ignored.')
+        self._generate_local_improvements()
+        self._generate_background_improvements()
+        self._generate_global_improvements(color_sets)
 
     def code(self) -> str:
         """
         :return: LaTeX code of the frame (in currently selected version).
         """
-        return self._frame_codes[self._current_opt]
+        # TODO invent combining versions in different categories
+        return self._original_code
 
-    def original_code(self) -> str:
-        """
-        :return: LaTeX code of the original frame, regardless of current selection.
-        """
-        return self._frame_codes[0]
-
-    def next_page(self):
+    def next_page(self) -> Optional[PageInfo]:
         """
         :return: next page from the PDF file as lists of PixMaps (first one is the original),
             or None if there is no next page.
         """
-        if not self._frame_docs:
-            self.compile()
-
-        self._current_page += 1
-        if self._current_page >= self._frame_docs[self._current_opt].page_count:
-            return None
-
-        return self._curr_page()
+        return self._page_mgr.next_page()
 
     def prev_page(self) -> Optional[PageInfo]:
         """
         :return: previous page from the PDF file as lists of PixMaps (first one is the original),
             or None if there is no previous page.
         """
-        if not self._frame_docs:
-            self.compile()
-
-        self._current_page -= 1
-        if self._current_page < 0:
-            return None
-
-        return self._curr_page()
+        return self._page_mgr.prev_page()
 
     def current_alternative(self) -> int:
         """
         :return: index of the currently selected frame alternative.
         """
-        return self._current_opt
+        # TODO struct of three alternatives?
+        return 0
 
     def select_alternative(self, idx: int):
         """
@@ -159,51 +191,18 @@ class Frame:
         by prev_page() and next_page() methods).
         :param idx: index of the alternative frame to be selected
         """
-        if idx >= len(self._frame_codes) or idx < 0:
-            raise InvalidAlternativeIndex(f"Invalid index of the frame alternative: {idx} "
-                                          f"(correct index range: 0-{len(self._frame_codes) - 1})")
+        # TODO refactor to three functions for alternatives in categories
+        self._page_mgr.local_versions.select_alternative(idx)
 
-        self._current_opt = idx
-
-    def _try_compile_code(self, code: str, tmp_file_path: str, color_defs=None):
-        with open(tmp_file_path, "w") as tmp_file:
-            if self._include_code:
-                tmp_file.write(self._include_code + "\n")
-
-            if color_defs:
-                tmp_file.write(color_defs + "\n")
-
-            tmp_file.write(tokens.DOC_BEGIN + "\n")
-            tmp_file.write(code)
-            tmp_file.write("\n" + tokens.DOC_END)
-
-        try:
-            pdf_path = compile_tex(tmp_file_path)
-            return fitz.open(pdf_path)
-
-        except CompilationError:
-            raise BaseFrameCompilationError(f'Compilation failed for frame "{os.path.basename(tmp_file_path)}"')
-
-    def _curr_page(self) -> PageInfo:
-        frame_improvements = [self._pixmap_from_document(doc) for doc in self._frame_docs]
-        bg_improvements = [self._pixmap_from_document(doc) for doc in self._background_docs]
-        global_improvements = [self._pixmap_from_document(doc) for doc in self._global_docs]
-        return PageInfo(frame_improvements, bg_improvements, global_improvements)
-
-    def _pixmap_from_document(self, document):
-        zoom_factor = 4.0
-        mat = fitz.Matrix(zoom_factor, zoom_factor)
-        return document.load_page(self._current_page).get_pixmap(matrix=mat, alpha=True)
-
-    def _suggest_changes(self):
-        src_code = self.original_code()
+    def _generate_local_improvements(self):
+        src_code = self._original_code
         for improvement in self._IMPROVEMENTS:
             improved_code = improvement.improve(src_code)
             if improved_code:
-                self._frame_codes.append(improved_code)
+                self._page_mgr.local_versions.add(full_code(self._include_code, improved_code))
 
-    def _generate_backgrounds(self):
-        rect = self._frame_docs[0].load_page(0).bound()
+    def _generate_background_improvements(self):
+        rect = self._page_mgr.original_version.doc().load_page(0).bound()
         dir_path = os.path.join(self._tmp_dir_path, "res")
 
         if not os.path.exists(dir_path):
@@ -212,11 +211,29 @@ class Frame:
         bg_idx = 0
         for background in get_backgrounds():
             file_path = os.path.join(dir_path, f"{self._name}_bg{bg_idx}.png")
-            background.generate_background(file_path, (rect.width, rect.height), None) # TODO frame idx etc
+            background.generate_background(file_path, (rect.width, rect.height), None)  # TODO frame idx etc
             bg_idx += 1
 
             bg_include_stmt = r"""\setbeamertemplate{background} 
 {
     \includegraphics[width=\paperwidth,height=\paperheight]{""" + file_path + "}\n}"
 
-            self._background_codes.append(f"{{\n{bg_include_stmt}\n{self._background_codes[0]}\n}}")
+            improved_code = f"{{\n{bg_include_stmt}\n{self._original_code}\n}}"
+            self._page_mgr.background_versions.add(full_code(self._include_code, improved_code))
+
+    def _generate_global_improvements(self, color_sets):
+        for colors in color_sets:
+            self._page_mgr.global_versions.add(full_code(self._include_code, self._original_code, colors))
+
+
+def full_code(header: str, base_code: str, color_defs=None):
+    code = header + "\n"
+
+    if color_defs:
+        code += color_defs + "\n"
+
+    code += tokens.DOC_BEGIN + "\n"
+    code += base_code + "\n"
+    code += tokens.DOC_END + "\n"
+
+    return code

@@ -65,8 +65,7 @@ class MainWindow(QtWidgets.QFrame):
         self._load_specific_thumbnails(self._global_thumbs_view, self._global_thumb_items)
 
     def _load_specific_thumbnails(self, dest_listview, thumbnail_items):
-        while dest_listview.count() > 0:
-            dest_listview.takeItem(0)
+        dest_listview.clear()
 
         for idx, item in enumerate(thumbnail_items):
             dest_listview.addItem(item)
@@ -94,13 +93,18 @@ class MainWindow(QtWidgets.QFrame):
         self._background_thumb_items.clear()
         self._global_thumb_items.clear()
 
-        self._curr_local_improvements = [to_qt_pixmap(page_opt) for page_opt in page_info.frame_improvements]
+        self._original_page = to_qt_pixmap(page_info.original_page)
+        self._curr_local_improvements = [self._original_page]
+        self._curr_background_improvements = [self._original_page]
+        self._curr_global_improvements = [self._original_page]
+
+        self._curr_local_improvements.extend([to_qt_pixmap(page_opt) for page_opt in page_info.frame_improvements])
         self._local_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_local_improvements]
 
-        self._curr_background_improvements = [to_qt_pixmap(page_opt) for page_opt in page_info.background_improvements]
+        self._curr_background_improvements.extend([to_qt_pixmap(page_opt) for page_opt in page_info.background_improvements])
         self._background_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_background_improvements]
 
-        self._curr_global_improvements = [to_qt_pixmap(page_opt) for page_opt in page_info.global_improvements]
+        self._curr_global_improvements.extend([to_qt_pixmap(page_opt) for page_opt in page_info.global_improvements])
         self._global_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_global_improvements]
 
         self._selected_local_opt = self._document.current_frame_alternative()
@@ -109,7 +113,7 @@ class MainWindow(QtWidgets.QFrame):
 
     def _display_page(self, image_to_display=None):
         if image_to_display is None:
-            image_to_display = self._curr_local_improvements[self._selected_local_opt]
+            image_to_display = self._original_page
         #option = self._local_highlighted_opt if self._local_highlighted_opt is not None else self._selected_opt
         current_width = self._image_display.width()
         current_height = self._image_display.height()
