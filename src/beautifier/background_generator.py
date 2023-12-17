@@ -3,7 +3,7 @@ from typing import Tuple, Optional
 import random
 from PIL import Image, ImageDraw
 
-from .color_generator import RGBRandomizer, RandomColor
+from .color_generator import RGBRandomizer, RGBRandomizers, RandomColor
 
 
 class FrameProgressInfo:
@@ -49,12 +49,14 @@ class RandomCirclesBackground(BackgroundGenerator):
             return is_farther(self.bottom_right, other.top_left, self.BOUNDING_BOX_SIZE) and is_farther(other.bottom_right, self.top_left, self.BOUNDING_BOX_SIZE) \
                 or is_farther(other.bottom_right, self.top_left, self.BOUNDING_BOX_SIZE) and is_farther(self.bottom_right, other.top_left, self.BOUNDING_BOX_SIZE)
 
+    def __init__(self, color_randomizer: RGBRandomizer):
+        self._randomizer = color_randomizer
+
     def generate_background(self, file_path: str, resolution: Tuple[int, int],
                             progress_info: Optional[FrameProgressInfo]):
 
         resolution = 1920, round(1920 * min(resolution) / max(resolution))
         circle_defs = self._place_random_circles(resolution)
-        self._randomize_color()
 
         img = Image.new(mode="RGB", size=resolution, color="white")
         self._draw_circles(img, circle_defs)
@@ -86,24 +88,19 @@ class RandomCirclesBackground(BackgroundGenerator):
         """
         return not any([circle.collides(existing_circle) for existing_circle in circle_defs])
 
-    def _randomize_color(self):
-        randomizer = RGBRandomizer(128, 255, 128, 255, 128, 255)
-        self._color = RandomColor(randomizer)
-
     def _draw_circles(self, img: Image, circle_defs):
         draw = ImageDraw.Draw(img)
         for circle in circle_defs:
-            col = self._color.as_tuple()
+            col = RandomColor(self._randomizer).as_tuple()
             draw.ellipse((circle.top_left, circle.bottom_right), fill=(col[0], col[1], col[2], self.CIRCLES_OPACITY))
 
 
 def get_backgrounds() -> list[BackgroundGenerator]:
-    backgrounds = list()
-
-    for _ in range(4):
-        backgrounds.append(RandomCirclesBackground())
-
-    return backgrounds
+    return [
+        RandomCirclesBackground(RGBRandomizers.PINK_SHADES),
+        RandomCirclesBackground(RGBRandomizers.GREEN_SHADES),
+        RandomCirclesBackground(RGBRandomizers.PURPLE_SHADES),
+    ]
 
 
 def is_farther(pt1, pt2, margin):

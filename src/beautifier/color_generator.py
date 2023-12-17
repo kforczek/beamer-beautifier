@@ -6,17 +6,40 @@ class RGBRandomizer:
     def __init__(self, rmin = 0, rmax = 255,
                         gmin = 0, gmax = 255,
                         bmin = 0, bmax = 255):
-        self.red = random.randint(rmin, rmax)
-        self.green = random.randint(gmin, gmax)
-        self.blue = random.randint(bmin, bmax)
+        self._rmin, self._rmax = rmin, rmax
+        self._gmin, self._gmax = gmin, gmax
+        self._bmin, self._bmax = bmin, bmax
+
+    def red(self):
+        return random.randint(self._rmin, self._rmax)
+
+    def green(self):
+        return random.randint(self._gmin, self._gmax)
+
+    def blue(self):
+        return random.randint(self._bmin, self._bmax)
+
+
+class RGBRandomizers:
+    PINK_SHADES = RGBRandomizer(240, 255,
+                                190, 210,
+                                190, 210)
+
+    GREEN_SHADES = RGBRandomizer(190, 210,
+                                 245, 255,
+                                 220, 240)
+
+    PURPLE_SHADES = RGBRandomizer(220, 240,
+                                  220, 240,
+                                  245, 255)
 
 
 class RandomColor:
     """Represents a random RGB color definition."""
     def __init__(self, randomizer=RGBRandomizer()):
-        self._red = randomizer.red
-        self._green = randomizer.green
-        self._blue = randomizer.blue
+        self._red = randomizer.red()
+        self._green = randomizer.green()
+        self._blue = randomizer.blue()
 
     def as_tuple(self):
         """
