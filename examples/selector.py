@@ -10,7 +10,8 @@ def select_example() -> str:
         ("Freiburg University 1", "freiburg-demo-1"),
         ("Freiburg University 2", "freiburg-demo-2"),
         ("Overleaf (Universitat Siegen)", "overleaf-siegen"),
-        ("Itemize with pause", "itemize-pause")
+        ("Itemize with pause", "itemize-pause"),
+        ("Itemize inspired by Freiburg #2", "freiburg-inspired")
     ]
 
     print("Select an example to continue with:")
