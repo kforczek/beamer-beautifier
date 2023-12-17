@@ -28,7 +28,7 @@ class MainWindow(QtWidgets.QFrame):
         layout.addWidget(splitter)
 
         self._image_display = splitter.left_pane.image_display
-        self._improve_button = splitter.left_pane.function_buttons.improve_button
+        # self._improve_button = splitter.left_pane.function_buttons.improve_button
         self._save_button = splitter.left_pane.function_buttons.save_button
         self._frame_thumbs_view = splitter.right_pane.frame_tab.thumbs_view
         self._background_thumbs_view = splitter.right_pane.background_tab.thumbs_view
@@ -36,7 +36,7 @@ class MainWindow(QtWidgets.QFrame):
 
         splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
         splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
-        self._improve_button.clicked.connect(self._select_improvement)
+        # self._improve_button.clicked.connect(self._select_improvement)
         self._frame_thumbs_view.itemSelectionChanged.connect(self._local_thumbnail_selection_changed)
         self._background_thumbs_view.itemSelectionChanged.connect(self._background_thumbnail_selection_changed)
         self._global_thumbs_view.itemSelectionChanged.connect(self._global_thumbnail_selection_changed)
@@ -164,7 +164,7 @@ class MainWindow(QtWidgets.QFrame):
         return highlighted_opt
 
     def _handle_thumb_highlight(self, improvements_list, highlighted_idx):
-        self._improve_button.setEnabled(self._local_highlighted_opt != self._selected_local_opt)  # TODO button fix (2 buttons?)
+        # self._improve_button.setEnabled(self._local_highlighted_opt != self._selected_local_opt)  # TODO button fix (2 buttons?)
         self._display_page(improvements_list[highlighted_idx])
 
     def _select_improvement(self):

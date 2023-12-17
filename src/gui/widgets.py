@@ -61,13 +61,8 @@ class GlobalButtonsLayout(QtWidgets.QHBoxLayout):
         self.save_button = QtWidgets.QPushButton("Save changes")
         self.save_button.setEnabled(False)
 
-        self.improve_button = QtWidgets.QPushButton("Select this version")
-        self.improve_button.setEnabled(False)
-
         self.addWidget(self.save_button)
-        self.addWidget(self.improve_button)
         self.setAlignment(self.save_button, QtCore.Qt.AlignmentFlag.AlignLeft)
-        self.setAlignment(self.improve_button, QtCore.Qt.AlignmentFlag.AlignRight)
 
 
 class ImprovementsTab(QtWidgets.QWidget):
