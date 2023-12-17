@@ -1,4 +1,7 @@
+from typing import Optional
+
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtWidgets import QListWidgetItem
 
 
 class MainSplitter(QtWidgets.QSplitter):
@@ -105,11 +108,27 @@ class ImageDisplay(QtWidgets.QLabel):
 class ThumbnailsListView(QtWidgets.QListWidget):
     def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
+        self._items = []
 
         self.setViewMode(QtWidgets.QListWidget.IconMode)
         self.setIconSize(QtCore.QSize(460, 300))
         self.setResizeMode(QtWidgets.QListWidget.Adjust)
         self.setMovement(QtWidgets.QListWidget.Static)
+
+    def addItem(self, aitem: QListWidgetItem) -> None:
+        super().addItem(aitem)
+        self._items.append(aitem)
+
+    def clear(self) -> None:
+        super().clear()
+        self._items.clear()
+
+    def selectedIndex(self) -> Optional[int]:
+        curr_item = self.currentItem()
+        try:
+            return self._items.index(curr_item) if curr_item else None
+        except ValueError:
+            return None
 
 
 class NavigationButton(QtWidgets.QPushButton):

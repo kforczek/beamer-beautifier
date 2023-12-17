@@ -1,6 +1,6 @@
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
-from .widgets import MainSplitter
+from .widgets import MainSplitter, ThumbnailsListView
 from src.beamer.document import BeamerDocument
 from src.beamer.page_info import PageInfo
 
@@ -140,28 +140,23 @@ class MainWindow(QtWidgets.QFrame):
             self._global_thumb_items,
             self._selected_global_opt)
 
-    def _thumbnail_selection_changed(self, improvements_list, thumbs_view: QtWidgets.QListView, thumb_items, curr_selected_opt: int) -> int:
+    def _thumbnail_selection_changed(self, improvements_list, thumbs_view: ThumbnailsListView, thumb_items, curr_selected_opt: int) -> int:
         """
         Handles changes in highlighting of the thumbnails.
         :return: Index of the highlighted thumbnail.
         """
-        curr_item = thumbs_view.currentItem()
+        highlighted_idx = thumbs_view.selectedIndex()
 
-        try:
-            highlighted_opt = thumb_items.index(curr_item) if curr_item else None
-        except ValueError:
-            highlighted_opt = None
-
-        if highlighted_opt in (None, curr_selected_opt):
+        if highlighted_idx in (None, curr_selected_opt):
             if len(thumb_items) > curr_selected_opt:
                 thumbs_view.setCurrentItem(thumb_items[curr_selected_opt])
                 highlighted_opt = curr_selected_opt
                 self._handle_thumb_highlight(improvements_list, highlighted_opt)
-            return highlighted_opt
+            return highlighted_idx
 
         # Another option has been highlighted
-        self._handle_thumb_highlight(improvements_list, highlighted_opt)
-        return highlighted_opt
+        self._handle_thumb_highlight(improvements_list, highlighted_idx)
+        return highlighted_idx
 
     def _handle_thumb_highlight(self, improvements_list, highlighted_idx):
         # self._improve_button.setEnabled(self._local_highlighted_opt != self._selected_local_opt)  # TODO button fix (2 buttons?)
