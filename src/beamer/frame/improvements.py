@@ -15,7 +15,7 @@ class ImprovementsManager:
     """Handles improvements generation and selection"""
 
     def __init__(self):
-        self._current_opt = 0
+        self._current_opt = None
         self._versions = []
 
     def __getitem__(self, item):
@@ -27,14 +27,20 @@ class ImprovementsManager:
         """
         return self._versions[self._current_opt]
 
+    def selected_index(self) -> int:
+        """
+        :return: Index of the currently selected improvement.
+        """
+        return self._current_opt+1 if self._current_opt is not None else 0
+
     def select_alternative(self, idx: int):
         """
         :param idx: index of the alternative version to be selected
         """
-        if idx >= len(self._versions) or idx < 0:
+        if idx > len(self._versions) or idx < 0:
             raise InvalidAlternativeIndex(f"Invalid index of the frame alternative: {idx} "
                                           f"(correct index range: 0-{len(self._versions) - 1})")
-        self._current_opt = idx
+        self._current_opt = idx-1 if idx > 0 else None
 
     def all_improvements(self) -> List[FrameCompiler]:
         """

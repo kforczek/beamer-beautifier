@@ -107,7 +107,10 @@ class MainWindow(QtWidgets.QFrame):
         self._curr_global_improvements.extend([to_qt_pixmap(page_opt) for page_opt in page_info.global_improvements])
         self._global_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_global_improvements]
 
-        self._selected_local_opt = self._document.current_frame_alternative()
+        self._selected_local_opt = self._document.current_local_improvements().selected_index()
+        self._selected_background_opt = self._document.current_background_improvements().selected_index()
+        self._selected_global_opt = self._document.current_global_improvements().selected_index()
+
         self._display_page()
         self._load_thumbnails()
 

@@ -67,13 +67,6 @@ class BeamerDocument:
         self._current_frame -= 1
         return self.prev_page()
 
-    def current_frame_alternative(self) -> int:
-        """
-        :return: index of the currently selected alternative for current frame.
-        """
-        # TODO remove - ImprovementsManager will be used here
-        return self._frames[self._current_frame].current_alternative()
-
     def current_local_improvements(self) -> LocalImprovementsManager:
         """
         :return: local improvements manager for the current frame.
@@ -91,14 +84,6 @@ class BeamerDocument:
         :return: global improvements manager for the current frame.
         """
         return self._frames[self._current_frame].global_improvements()
-
-    # def select_local_alternative(self, idx: int):
-    #     """
-    #     Handles selection of the alternative proposed for a current frame. The alternative is identified by its index
-    #     (following the order of PixMaps returned by prev_page() and next_page() methods).
-    #     :param idx: index of the alternative frame to be selected
-    #     """
-    #     self._frames[self._current_frame].select_alternative(idx)
 
     def save(self, output_path: str):
         """

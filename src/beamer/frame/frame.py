@@ -104,15 +104,6 @@ class Frame:
 
         return self._curr_page()
 
-    def current_alternative(self) -> int:
-        """
-        :return: index of the currently selected frame alternative.
-        """
-        # TODO struct of three alternatives?
-        # TODO2 update: ImprovementsManager is enough for GUI?
-        # TODO3: remove this soon
-        return 0
-
     def local_improvements(self) -> LocalImprovementsManager:
         """
         :return: local improvements manager for this frame.
