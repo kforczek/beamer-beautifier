@@ -2,7 +2,8 @@ import os
 from typing import Optional
 
 from . import tokens
-from .frame import Frame
+from .frame.frame import Frame
+from .frame.improvements import GlobalImprovementsManager
 from .page_info import PageInfo
 from src.beautifier.color_generator import get_random_color_set
 
@@ -24,10 +25,11 @@ class BeamerDocument:
     def __init__(self, doc_path: str):
         self._path = doc_path
         self._check_path()
-        self._color_versions = [get_random_color_set() for _ in range(4)]
         self._split_frames()
-
         self._current_frame = -1
+
+        color_versions = [get_random_color_set() for _ in range(4)]
+        GlobalImprovementsManager.define_color_sets(color_versions)
 
     def next_page(self) -> Optional[PageInfo]:
         """
@@ -132,5 +134,5 @@ class BeamerDocument:
             frame_code = f"{tokens.FRAME_BEGIN}{frame_code}{tokens.FRAME_END}\n"
             frame_filename = f"{doc_name}_frame{idx:0{idx_len}}"
 
-            frame = Frame(frame_filename, os.path.dirname(self._path), frame_code, self._header, self._color_versions)
+            frame = Frame(frame_filename, os.path.dirname(self._path), frame_code, self._header)
             self._frames.append(frame)

@@ -1,14 +1,15 @@
 from typing import Optional
 from .scanner import TokenScanner
 from ..beamer import tokens
+from ..beamer.frame.code import FrameCode
 
 
 class FrameImprovement:
-    def check_preconditions(self, frame_code: str) -> bool:
+    def check_preconditions(self, frame_code: FrameCode) -> bool:
         """Checks preconditions (if any) and returns True if an improvement can be made."""
         raise NotImplementedError("Overridden in subclasses")
 
-    def improve(self, frame_code: str) -> Optional[str]:
+    def improve(self, frame_code: FrameCode) -> Optional[FrameCode]:
         """
         Suggests an improvement of the frame if preconditions are met (or if there are no preconditions).
         :return: Improved code of the frame or None if the preconditions exist and are not met.
@@ -18,16 +19,11 @@ class FrameImprovement:
 
         return self._improve(frame_code)
 
-    def _improve(self, frame_code: str) -> str:
+    def _improve(self, frame_code: FrameCode) -> FrameCode:
         raise NotImplementedError("Overridden in subclasses")
 
 
-class UnconditionalFrameImprovement(FrameImprovement):
-    def check_preconditions(self, frame_code: str) -> bool:
-        return True
-
-
-def get_improvements() -> set[FrameImprovement]:
+def get_local_generators() -> set[FrameImprovement]:
     return {
         ItemizeIndentIncrease(),
         EnumerateToTable(),
@@ -39,13 +35,14 @@ def get_improvements() -> set[FrameImprovement]:
 
 
 class ItemizeIndentIncrease(FrameImprovement):
-    def check_preconditions(self, frame_code: str) -> bool:
-        return tokens.ITEMIZE_BEGIN in frame_code
+    def check_preconditions(self, frame_code: FrameCode) -> bool:
+        return tokens.ITEMIZE_BEGIN in frame_code.base_code
 
-    def _improve(self, frame_code: str) -> str:
-        items_begin = frame_code.find(tokens.ITEMIZE_BEGIN) + len(tokens.ITEMIZE_BEGIN)
-        items_to_center = frame_code[: items_begin] + tokens.items_indent(2) + frame_code[items_begin:]
-        return items_to_center
+    def _improve(self, frame_code: FrameCode) -> FrameCode:
+        code = frame_code.base_code
+        items_begin = code.find(tokens.ITEMIZE_BEGIN) + len(tokens.ITEMIZE_BEGIN)
+        items_to_center = code[: items_begin] + tokens.items_indent(2) + code[items_begin:]
+        return FrameCode(frame_code.header, items_to_center, frame_code.global_color_defs, frame_code.bg_img_def)
 
 
 class ListToTable(FrameImprovement):
@@ -62,12 +59,12 @@ class ListToTable(FrameImprovement):
                                      tokens.ENUMERATE_BEGIN, tokens.ENUMERATE_END, tokens.ITEM)
         self._cache: dict[str, ListToTable.SplitCode] = dict()
 
-    def check_preconditions(self, frame_code: str) -> bool:
-        count = len(self._split_top_list_items(frame_code).items)
+    def check_preconditions(self, frame_code: FrameCode) -> bool:
+        count = len(self._split_top_list_items(frame_code.base_code).items)
         return 1 < count <= 4
 
-    def _improve(self, frame_code: str) -> str:
-        split_code = self._split_top_list_items(frame_code)
+    def _improve(self, frame_code: FrameCode) -> FrameCode:
+        split_code = self._split_top_list_items(frame_code.base_code)
         changed_snippet = r"\begin{tabular}{" + 'c'*len(split_code.items) + "}\n"
         for item in split_code.items[:-1]:
             changed_snippet += item + " & "
@@ -79,7 +76,9 @@ class ListToTable(FrameImprovement):
             pre_code = split_code.pre_list_code
         else:
             pre_code = f"{split_code.pre_list_code} \\\\"
-        return f"{pre_code}{changed_snippet}{split_code.post_list_code}"
+
+        return FrameCode(frame_code.header, f"{pre_code}{changed_snippet}{split_code.post_list_code}",
+                         frame_code.global_color_defs, frame_code.bg_img_def)
 
     def _split_top_list_items(self, frame_code: str) -> SplitCode:
         if frame_code in self._cache:
