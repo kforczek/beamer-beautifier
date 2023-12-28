@@ -110,7 +110,26 @@ class Frame:
         """
         # TODO struct of three alternatives?
         # TODO2 update: ImprovementsManager is enough for GUI?
+        # TODO3: remove this soon
         return 0
+
+    def local_improvements(self) -> LocalImprovementsManager:
+        """
+        :return: local improvements manager for this frame.
+        """
+        return self._local_versions
+
+    def background_improvements(self) -> BackgroundImprovementsManager:
+        """
+        :return: background improvements manager for this frame.
+        """
+        return self._background_versions
+
+    def global_improvements(self) -> GlobalImprovementsManager:
+        """
+        :return: global improvements manager for this frame.
+        """
+        return self._global_versions
 
     # def select_local_alternative(self, idx: int):
     #     """

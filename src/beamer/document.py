@@ -3,7 +3,7 @@ from typing import Optional
 
 from . import tokens
 from .frame.frame import Frame
-from .frame.improvements import GlobalImprovementsManager
+from .frame.improvements import LocalImprovementsManager, BackgroundImprovementsManager, GlobalImprovementsManager
 from .page_info import PageInfo
 from src.beautifier.color_generator import get_random_color_set
 
@@ -71,15 +71,34 @@ class BeamerDocument:
         """
         :return: index of the currently selected alternative for current frame.
         """
+        # TODO remove - ImprovementsManager will be used here
         return self._frames[self._current_frame].current_alternative()
 
-    def select_alternative(self, idx: int):
+    def current_local_improvements(self) -> LocalImprovementsManager:
         """
-        Handles selection of the alternative proposed for a current frame. The alternative is identified by its index
-        (following the order of PixMaps returned by prev_page() and next_page() methods).
-        :param idx: index of the alternative frame to be selected
+        :return: local improvements manager for the current frame.
         """
-        self._frames[self._current_frame].select_alternative(idx)
+        return self._frames[self._current_frame].local_improvements()
+
+    def current_background_improvements(self) -> BackgroundImprovementsManager:
+        """
+        :return: background improvements manager for the current frame.
+        """
+        return self._frames[self._current_frame].background_improvements()
+
+    def current_global_improvements(self) -> GlobalImprovementsManager:
+        """
+        :return: global improvements manager for the current frame.
+        """
+        return self._frames[self._current_frame].global_improvements()
+
+    # def select_local_alternative(self, idx: int):
+    #     """
+    #     Handles selection of the alternative proposed for a current frame. The alternative is identified by its index
+    #     (following the order of PixMaps returned by prev_page() and next_page() methods).
+    #     :param idx: index of the alternative frame to be selected
+    #     """
+    #     self._frames[self._current_frame].select_alternative(idx)
 
     def save(self, output_path: str):
         """

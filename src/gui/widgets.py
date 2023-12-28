@@ -3,13 +3,15 @@ from typing import Optional
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QListWidgetItem
 
+from src.beamer.document import BeamerDocument
+
 
 class MainSplitter(QtWidgets.QSplitter):
-    def __init__(self, parent: QtWidgets.QWidget):
+    def __init__(self, parent: QtWidgets.QWidget, document: BeamerDocument):
         super().__init__(QtCore.Qt.Orientation.Horizontal, parent)
 
         self.left_pane = MainSplitterLeftPane(self)
-        self.right_pane = MainSplitterRightPane(self)
+        self.right_pane = MainSplitterRightPane(self, document)
 
         self.addWidget(self.left_pane)
         self.addWidget(self.right_pane)
@@ -33,12 +35,12 @@ class MainSplitterLeftPane(QtWidgets.QWidget):
 
 
 class MainSplitterRightPane(QtWidgets.QTabWidget):
-    def __init__(self, parent: QtWidgets.QWidget):
+    def __init__(self, parent: QtWidgets.QWidget, document: BeamerDocument):
         super().__init__(parent)
 
-        self.frame_tab = ImprovementsTab(self)
-        self.background_tab = ImprovementsTab(self)
-        self.global_tab = ImprovementsTab(self)
+        self.frame_tab = ImprovementsTab(self, document.current_local_improvements)
+        self.background_tab = ImprovementsTab(self, document.current_background_improvements)
+        self.global_tab = ImprovementsTab(self, document.current_global_improvements)
 
         self.addTab(self.frame_tab, "Content alignment")
         self.addTab(self.background_tab, "Background")
@@ -69,17 +71,29 @@ class GlobalButtonsLayout(QtWidgets.QHBoxLayout):
 
 
 class ImprovementsTab(QtWidgets.QWidget):
-    def __init__(self, parent: QtWidgets.QWidget):
+    def __init__(self, parent: QtWidgets.QWidget, improvements_getter):
         super().__init__(parent)
 
         layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(layout)
+        self._improvements_getter = improvements_getter
 
         self.thumbs_view = ThumbnailsListView(self)
         self.function_buttons = FunctionButtonsLayout()
 
+        self.function_buttons.choose_button.clicked.connect(self._choose_button_click)
+        self.function_buttons.regenerate_button.clicked.connect(self._regenerate_button_click)
+
         layout.addWidget(self.thumbs_view)
         layout.addLayout(self.function_buttons)
+
+    def _choose_button_click(self):
+        selected_idx = self.thumbs_view.selectedIndex()
+        self._improvements_getter().select_alternative(selected_idx)
+
+    def _regenerate_button_click(self):
+        self._improvements_getter().generate_improvements()
+        # TODO invalidate currently displayed thumbnails
 
 
 class FunctionButtonsLayout(QtWidgets.QHBoxLayout):

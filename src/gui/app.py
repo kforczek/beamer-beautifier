@@ -13,18 +13,18 @@ class MainWindow(QtWidgets.QFrame):
     def __init__(self, document: BeamerDocument, doc_folder_path: str, parent=None):
         super().__init__(parent)
 
-        self._init_ui()
+        self._init_ui(document)
         self._init_document_logic(document)
         self._doc_folder_path = doc_folder_path
 
-    def _init_ui(self):
+    def _init_ui(self, document: BeamerDocument):
         self.setGeometry(100, 100, 1500, 870)
         self.setWindowTitle('Beamer Beautifier')
 
         layout = QtWidgets.QHBoxLayout()
         self.setLayout(layout)
 
-        splitter = MainSplitter(self)
+        splitter = MainSplitter(self, document)
         layout.addWidget(splitter)
 
         self._image_display = splitter.left_pane.image_display
@@ -52,8 +52,8 @@ class MainWindow(QtWidgets.QFrame):
         self._selected_background_opt = 0
         self._selected_global_opt = 0
         self._local_highlighted_opt = None
+        self._background_highlighted_opt = None
         self._global_highlighted_opt = None
-        self._changes_count = 0
         self._local_thumb_items = []
         self._background_thumb_items = []
         self._global_thumb_items = []
@@ -163,7 +163,6 @@ class MainWindow(QtWidgets.QFrame):
         return highlighted_idx
 
     def _handle_thumb_highlight(self, improvements_list, highlighted_idx):
-        # self._improve_button.setEnabled(self._local_highlighted_opt != self._selected_local_opt)  # TODO button fix (2 buttons?)
         self._display_page(improvements_list[highlighted_idx])
 
     def _select_improvement(self):
@@ -171,9 +170,17 @@ class MainWindow(QtWidgets.QFrame):
             return
 
         self._selected_local_opt = self._local_highlighted_opt
-        self._document.select_alternative(self._selected_local_opt)
+        self._document.select_local_alternative(self._selected_local_opt)
         self._update_save_button_state(self._selected_local_opt)
-        self._handle_thumb_highlight()
+        #self._handle_thumb_highlight()
+
+    def _select_local_improvement(self):
+        if self._local_highlighted_opt == self._selected_local_opt:
+            return
+
+        self._selected_local_opt = self._local_highlighted_opt
+        self._document.select_local_alternative(self._selected_local_opt)
+        self._update_save_button_state(self._selected_local_opt)
 
     def _save_changes(self):
         path = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save modified presentation', directory=self._doc_folder_path)[0]
@@ -182,8 +189,8 @@ class MainWindow(QtWidgets.QFrame):
         self._document.save(path)
 
     def _update_save_button_state(self, new_selected_opt: int):
-        self._changes_count += 1 if new_selected_opt > 0 else -1
-        self._save_button.setEnabled(self._changes_count > 0)
+        changes_count = self._selected_local_opt + self._selected_background_opt + self._selected_global_opt
+        self._save_button.setEnabled(changes_count > 0)
 
     def resizeEvent(self, event):
         self._display_page()

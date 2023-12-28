@@ -62,6 +62,7 @@ class LocalImprovementsManager(ImprovementsManager):
         self._tmp_dir_path = tmp_dir_path
 
     def generate_improvements(self):
+        self._versions.clear()
         self._current_opt = 0
         index_gen = 0
         for improvement in self._GENERATORS:
@@ -91,6 +92,7 @@ class BackgroundImprovementsManager(ImprovementsManager):
         self._tmp_dir_path = tmp_dir_path
 
     def generate_improvements(self):
+        self._versions.clear()
         self._current_opt = 0
         rect = self._original_version.doc().load_page(0).bound()
         original_code = self._original_version.code()
@@ -144,6 +146,7 @@ class GlobalImprovementsManager(ImprovementsManager):
         self._GLOBAL_OPT = self._current_opt
 
     def generate_improvements(self):
+        self._versions.clear()
         self._current_opt = 0
         self._GLOBAL_OPT = 0
         index_gen = 0
