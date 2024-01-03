@@ -62,16 +62,16 @@ class ImprovementsManager:
 
 class GlobalImprovementsManager(ImprovementsManager):
     def current_version(self) -> FrameCompiler:
-        self._current_opt = GlobalImprovementsManager._GLOBAL_OPT
+        self._current_opt = type(self)._GLOBAL_OPT
         return super().current_version()
 
     def selected_index(self) -> int:
-        self._current_opt = GlobalImprovementsManager._GLOBAL_OPT  # TODO this shouldn't be all subclasses-global...
+        self._current_opt = type(self)._GLOBAL_OPT
         return super().selected_index()
 
     def select_alternative(self, idx: int):
         super().select_alternative(idx)
-        GlobalImprovementsManager._GLOBAL_OPT = self._current_opt
+        type(self)._GLOBAL_OPT = self._current_opt
 
 
 #############  FINAL IMPROVEMENT MANAGERS  #############

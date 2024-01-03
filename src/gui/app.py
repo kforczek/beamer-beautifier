@@ -64,15 +64,30 @@ class MainWindow(QtWidgets.QFrame):
         self._load_specific_thumbnails(self._background_thumbs_view, self._background_thumb_items)
         self._load_specific_thumbnails(self._global_thumbs_view, self._global_thumb_items)
 
+        self._highlight_local_thumbnail()
+        self._highlight_background_thumbnail()
+        self._highlight_global_thumbnail()
+
     def _load_specific_thumbnails(self, dest_listview, thumbnail_items):
         dest_listview.clear()
 
         for idx, item in enumerate(thumbnail_items):
             dest_listview.addItem(item)
 
-            if idx == self._selected_local_opt:
-                dest_listview.setCurrentItem(item)
-                self._local_highlighted_opt = self._selected_local_opt
+    def _highlight_local_thumbnail(self):
+        item_to_highlight = self._local_thumb_items[self._selected_local_opt]
+        self._frame_thumbs_view.setCurrentItem(item_to_highlight)
+        self._local_highlighted_opt = self._selected_local_opt
+
+    def _highlight_background_thumbnail(self):
+        item_to_highlight = self._background_thumb_items[self._selected_background_opt]
+        self._background_thumbs_view.setCurrentItem(item_to_highlight)
+        self._background_highlighted_opt = self._selected_background_opt
+
+    def _highlight_global_thumbnail(self):
+        item_to_highlight = self._global_thumb_items[self._selected_global_opt]
+        self._global_thumbs_view.setCurrentItem(item_to_highlight)
+        self._global_highlighted_opt = self._selected_global_opt
 
     def _prev_page(self):
         page = self._document.prev_page()
