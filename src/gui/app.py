@@ -1,5 +1,9 @@
 import sys
+from typing import Optional
+
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QApplication
+
 from .widgets import MainSplitter, ThumbnailsListView
 from src.beamer.document import BeamerDocument
 from src.beamer.page_info import PageInfo
@@ -18,25 +22,23 @@ class MainWindow(QtWidgets.QFrame):
         self._doc_folder_path = doc_folder_path
 
     def _init_ui(self, document: BeamerDocument):
-        self.setGeometry(100, 100, 1500, 870)
+        self.resize(1500, 870)
         self.setWindowTitle('Beamer Beautifier')
 
         layout = QtWidgets.QHBoxLayout()
         self.setLayout(layout)
 
-        splitter = MainSplitter(self, document)
-        layout.addWidget(splitter)
+        self._splitter = MainSplitter(self, document)
+        layout.addWidget(self._splitter)
 
-        self._image_display = splitter.left_pane.image_display
-        # self._improve_button = splitter.left_pane.function_buttons.improve_button
-        self._save_button = splitter.left_pane.function_buttons.save_button
-        self._frame_thumbs_view = splitter.right_pane.frame_tab.thumbs_view
-        self._background_thumbs_view = splitter.right_pane.background_tab.thumbs_view
-        self._global_thumbs_view = splitter.right_pane.global_tab.thumbs_view
+        self._image_display = self._splitter.left_pane.image_display
+        self._save_button = self._splitter.left_pane.function_buttons.save_button
+        self._frame_thumbs_view = self._splitter.right_pane.frame_tab.thumbs_view
+        self._background_thumbs_view = self._splitter.right_pane.background_tab.thumbs_view
+        self._global_thumbs_view = self._splitter.right_pane.global_tab.thumbs_view
 
-        splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
-        splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
-        # self._improve_button.clicked.connect(self._select_improvement)
+        self._splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
+        self._splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
         self._frame_thumbs_view.itemClicked.connect(lambda _: self._local_thumbnail_selection_changed())
         self._background_thumbs_view.itemClicked.connect(lambda _: self._background_thumbnail_selection_changed())
         self._global_thumbs_view.itemClicked.connect(lambda _: self._global_thumbnail_selection_changed())
@@ -179,23 +181,6 @@ class MainWindow(QtWidgets.QFrame):
     def _handle_thumb_highlight(self, improvements_list, highlighted_idx):
         self._display_page(improvements_list[highlighted_idx])
 
-    def _select_improvement(self):
-        if self._local_highlighted_opt == self._selected_local_opt:
-            return
-
-        self._selected_local_opt = self._local_highlighted_opt
-        self._document.select_local_alternative(self._selected_local_opt)
-        self._update_save_button_state(self._selected_local_opt)
-        #self._handle_thumb_highlight()
-
-    def _select_local_improvement(self):
-        if self._local_highlighted_opt == self._selected_local_opt:
-            return
-
-        self._selected_local_opt = self._local_highlighted_opt
-        self._document.select_local_alternative(self._selected_local_opt)
-        self._update_save_button_state(self._selected_local_opt)
-
     def _save_changes(self):
         path = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save modified presentation', directory=self._doc_folder_path)[0]
         if not path:
@@ -214,6 +199,22 @@ class MainWindow(QtWidgets.QFrame):
         self._display_page()
         super(MainWindow, self).showEvent(event)
 
+    def closeEvent(self, a0: QtGui.QCloseEvent):
+        if not self._splitter.is_any_change_done():
+            a0.accept()
+            return
+
+        message_title = "Discard changes?"
+        message_content = "You have made changes to the loaded presentation. " \
+                          "Are you sure you want to exit without saving the results?"
+        selection = QtWidgets.QMessageBox.question(self, message_title, message_content,
+                                                   QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel,
+                                                   QtWidgets.QMessageBox.Cancel)
+        if selection == QtWidgets.QMessageBox.Ok:
+            a0.accept()
+        else:
+            a0.ignore()
+
 
 def to_qt_pixmap(fitz_pixmap):
     img = QtGui.QImage(fitz_pixmap.samples, fitz_pixmap.width, fitz_pixmap.height,
@@ -228,8 +229,7 @@ def to_thumbnail_item(qt_pixmap):
     return item
 
 
-def run_app(document: BeamerDocument, doc_folder: str):
-    app = QtWidgets.QApplication(sys.argv)
+def run_app(app: QApplication, document: BeamerDocument, doc_folder: str):
     viewer = MainWindow(document, doc_folder)
     viewer.show()
     sys.exit(app.exec_())

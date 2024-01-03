@@ -10,6 +10,8 @@ class MainSplitter(QtWidgets.QSplitter):
     def __init__(self, parent: QtWidgets.QWidget, document: BeamerDocument):
         super().__init__(QtCore.Qt.Orientation.Horizontal, parent)
 
+        self._is_any_change = False
+
         self.left_pane = MainSplitterLeftPane(self)
         self.right_pane = MainSplitterRightPane(self, document)
 
@@ -17,9 +19,17 @@ class MainSplitter(QtWidgets.QSplitter):
         self.addWidget(self.right_pane)
         self.setSizes([970, 430])
 
+    def notify_change_done(self):
+        """Receives the information about any improvement being selected."""
+        self._is_any_change = True
+        self.left_pane.function_buttons.save_button.setEnabled(True)
+
+    def is_any_change_done(self):
+        return self._is_any_change
+
 
 class MainSplitterLeftPane(QtWidgets.QWidget):
-    def __init__(self, parent: QtWidgets.QWidget):
+    def __init__(self, parent: MainSplitter):
         super().__init__(parent)
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -35,12 +45,12 @@ class MainSplitterLeftPane(QtWidgets.QWidget):
 
 
 class MainSplitterRightPane(QtWidgets.QTabWidget):
-    def __init__(self, parent: QtWidgets.QWidget, document: BeamerDocument):
+    def __init__(self, parent: MainSplitter, document: BeamerDocument):
         super().__init__(parent)
 
-        self.frame_tab = ImprovementsTab(self, document.current_local_improvements)
-        self.background_tab = ImprovementsTab(self, document.current_background_improvements)
-        self.global_tab = ImprovementsTab(self, document.current_global_improvements)
+        self.frame_tab = ImprovementsTab(self, parent, document.current_local_improvements)
+        self.background_tab = ImprovementsTab(self, parent, document.current_background_improvements)
+        self.global_tab = ImprovementsTab(self, parent, document.current_global_improvements)
 
         self.addTab(self.frame_tab, "Content alignment")
         self.addTab(self.background_tab, "Background")
@@ -71,12 +81,13 @@ class GlobalButtonsLayout(QtWidgets.QHBoxLayout):
 
 
 class ImprovementsTab(QtWidgets.QWidget):
-    def __init__(self, parent: QtWidgets.QWidget, improvements_getter):
+    def __init__(self, parent: QtWidgets.QWidget, main_splitter: MainSplitter, improvements_getter):
         super().__init__(parent)
 
         layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(layout)
         self._improvements_getter = improvements_getter
+        self._main_splitter = main_splitter
 
         self.thumbs_view = ThumbnailsListView(self)
         self.function_buttons = FunctionButtonsLayout()
@@ -89,7 +100,10 @@ class ImprovementsTab(QtWidgets.QWidget):
 
     def _choose_button_click(self):
         selected_idx = self.thumbs_view.selectedIndex()
-        self._improvements_getter().select_alternative(selected_idx)
+        improvements_mgr = self._improvements_getter()
+        if improvements_mgr.selected_index() != selected_idx:
+            self._main_splitter.notify_change_done()
+        improvements_mgr.select_alternative(selected_idx)
 
     def _regenerate_button_click(self):
         self._improvements_getter().generate_improvements()
