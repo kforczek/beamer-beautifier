@@ -37,9 +37,9 @@ class MainWindow(QtWidgets.QFrame):
         splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
         splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
         # self._improve_button.clicked.connect(self._select_improvement)
-        self._frame_thumbs_view.itemSelectionChanged.connect(self._local_thumbnail_selection_changed)
-        self._background_thumbs_view.itemSelectionChanged.connect(self._background_thumbnail_selection_changed)
-        self._global_thumbs_view.itemSelectionChanged.connect(self._global_thumbnail_selection_changed)
+        self._frame_thumbs_view.itemClicked.connect(lambda _: self._local_thumbnail_selection_changed())
+        self._background_thumbs_view.itemClicked.connect(lambda _: self._background_thumbnail_selection_changed())
+        self._global_thumbs_view.itemClicked.connect(lambda _: self._global_thumbnail_selection_changed())
         self._save_button.clicked.connect(self._save_changes)
 
     def _init_document_logic(self, document: BeamerDocument):
@@ -169,14 +169,10 @@ class MainWindow(QtWidgets.QFrame):
         """
         highlighted_idx = thumbs_view.selectedIndex()
 
-        if highlighted_idx in (None, curr_selected_opt):
-            if len(thumb_items) > curr_selected_opt:
-                thumbs_view.setCurrentItem(thumb_items[curr_selected_opt])
-                highlighted_opt = curr_selected_opt
-                self._handle_thumb_highlight(improvements_list, highlighted_opt)
-            return highlighted_idx
+        if highlighted_idx in (None, curr_selected_opt) and len(thumb_items) > curr_selected_opt:
+            thumbs_view.setCurrentItem(thumb_items[curr_selected_opt])
+            highlighted_idx = curr_selected_opt
 
-        # Another option has been highlighted
         self._handle_thumb_highlight(improvements_list, highlighted_idx)
         return highlighted_idx
 
