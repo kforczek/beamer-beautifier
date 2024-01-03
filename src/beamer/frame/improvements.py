@@ -11,6 +11,9 @@ class InvalidAlternativeIndex(ValueError):
     pass
 
 
+#############  INTERFACES  #############
+
+
 class ImprovementsManager:
     """Handles improvements generation and selection"""
 
@@ -57,6 +60,23 @@ class ImprovementsManager:
         raise NotImplementedError("Override in subclasses")
 
 
+class GlobalImprovementsManager(ImprovementsManager):
+    def current_version(self) -> FrameCompiler:
+        self._current_opt = GlobalImprovementsManager._GLOBAL_OPT
+        return super().current_version()
+
+    def selected_index(self) -> int:
+        self._current_opt = GlobalImprovementsManager._GLOBAL_OPT  # TODO this shouldn't be all subclasses-global...
+        return super().selected_index()
+
+    def select_alternative(self, idx: int):
+        super().select_alternative(idx)
+        GlobalImprovementsManager._GLOBAL_OPT = self._current_opt
+
+
+#############  FINAL IMPROVEMENT MANAGERS  #############
+
+
 class LocalImprovementsManager(ImprovementsManager):
     _PREFIX = "l"
     _GENERATORS = get_local_generators()
@@ -69,7 +89,6 @@ class LocalImprovementsManager(ImprovementsManager):
 
     def generate_improvements(self):
         self._versions.clear()
-        self._current_opt = 0
         index_gen = 0
         for improvement in self._GENERATORS:
             improved_code = improvement.improve(self._original_code)
@@ -87,9 +106,10 @@ class LocalImprovementsManager(ImprovementsManager):
         destination_code.base_code = improved_code.base_code
 
 
-class BackgroundImprovementsManager(ImprovementsManager):
+class BackgroundImprovementsManager(GlobalImprovementsManager):
     _PREFIX = "b"
     _GENERATORS = get_backgrounds()
+    _GLOBAL_OPT = None
 
     def __init__(self, original_frame_version: FrameCompiler, base_name: str, tmp_dir_path: str):
         super().__init__()
@@ -99,7 +119,6 @@ class BackgroundImprovementsManager(ImprovementsManager):
 
     def generate_improvements(self):
         self._versions.clear()
-        self._current_opt = 0
         rect = self._original_version.doc().load_page(0).bound()
         original_code = self._original_version.code()
         dir_path = os.path.join(self._tmp_dir_path, "res")
@@ -128,10 +147,10 @@ class BackgroundImprovementsManager(ImprovementsManager):
         destination_code.bg_img_def = self.current_version().code().bg_img_def
 
 
-class GlobalImprovementsManager(ImprovementsManager):
+class ColorSetsImprovementsManager(GlobalImprovementsManager):
     _PREFIX = "g"
     _COLOR_SETS = None
-    _GLOBAL_OPT = 0
+    _GLOBAL_OPT = None
 
     @classmethod
     def define_color_sets(cls, color_sets: List[str]):
@@ -143,18 +162,8 @@ class GlobalImprovementsManager(ImprovementsManager):
         self._base_name = base_name
         self._tmp_dir_path = tmp_dir_path
 
-    def current_version(self) -> FrameCompiler:
-        self._current_opt = self._GLOBAL_OPT
-        return super().current_version()
-
-    def select_alternative(self, idx: int):
-        super().current_version()
-        self._GLOBAL_OPT = self._current_opt
-
     def generate_improvements(self):
         self._versions.clear()
-        self._current_opt = 0
-        self._GLOBAL_OPT = 0
         index_gen = 0
         for colors in self._COLOR_SETS:
             code_with_colors = FrameCode(self._original_code.header, self._original_code.base_code,

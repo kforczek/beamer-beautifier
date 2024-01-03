@@ -3,7 +3,7 @@ from typing import Optional
 
 from . import tokens
 from .frame.frame import Frame
-from .frame.improvements import LocalImprovementsManager, BackgroundImprovementsManager, GlobalImprovementsManager
+from .frame.improvements import LocalImprovementsManager, BackgroundImprovementsManager, ColorSetsImprovementsManager
 from .page_info import PageInfo
 from src.beautifier.color_generator import get_random_color_set
 
@@ -29,7 +29,7 @@ class BeamerDocument:
         self._current_frame = -1
 
         color_versions = [get_random_color_set() for _ in range(4)]
-        GlobalImprovementsManager.define_color_sets(color_versions)
+        ColorSetsImprovementsManager.define_color_sets(color_versions)
 
     def next_page(self) -> Optional[PageInfo]:
         """
@@ -79,7 +79,7 @@ class BeamerDocument:
         """
         return self._frames[self._current_frame].background_improvements()
 
-    def current_global_improvements(self) -> GlobalImprovementsManager:
+    def current_global_improvements(self) -> ColorSetsImprovementsManager:
         """
         :return: global improvements manager for the current frame.
         """

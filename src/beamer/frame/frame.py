@@ -8,7 +8,7 @@ from src.beamer.page_info import PageInfo
 from .code import FrameCode
 from .compiler import FrameCompiler
 from .improvements import (ImprovementsManager, LocalImprovementsManager,
-                           BackgroundImprovementsManager, GlobalImprovementsManager)
+                           BackgroundImprovementsManager, ColorSetsImprovementsManager)
 
 from src.beautifier.background_generator import get_backgrounds
 
@@ -67,7 +67,7 @@ class Frame:
 
         self._local_versions = LocalImprovementsManager(original_code, self._name, self._tmp_dir_path)
         self._background_versions = BackgroundImprovementsManager(self._original_version, self._name, self._tmp_dir_path)
-        self._global_versions = GlobalImprovementsManager(original_code, self._name, self._tmp_dir_path)
+        self._global_versions = ColorSetsImprovementsManager(original_code, self._name, self._tmp_dir_path)
 
     def code(self) -> str:
         """
@@ -116,7 +116,7 @@ class Frame:
         """
         return self._background_versions
 
-    def global_improvements(self) -> GlobalImprovementsManager:
+    def global_improvements(self) -> ColorSetsImprovementsManager:
         """
         :return: global improvements manager for this frame.
         """
