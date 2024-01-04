@@ -1,9 +1,10 @@
 import os
-from typing import List, Optional
+from typing import Optional
+from copy import copy
 
 import fitz
 from src.beamer import tokens
-from src.beamer.compilation import compile_tex, create_temp_dir, CompilationError
+from src.beamer.compilation import create_temp_dir
 from src.beamer.page_info import PageInfo
 from .code import FrameCode
 from .compiler import FrameCompiler
@@ -69,12 +70,15 @@ class Frame:
         self._background_versions = BackgroundImprovementsManager(self._original_version, self._name, self._tmp_dir_path)
         self._global_versions = ColorSetsImprovementsManager(original_code, self._name, self._tmp_dir_path)
 
-    def code(self) -> str:
+    def code(self) -> FrameCode:
         """
         :return: LaTeX code of the frame (in currently selected version).
         """
-        # TODO invent combining versions in different categories
-        return self._original_code
+        code = copy(self._original_version.code())
+        for improvement in (self._local_versions, self._background_versions, self._global_versions):
+            improvement.decorate(code)
+
+        return code
 
     def next_page(self) -> Optional[PageInfo]:
         """

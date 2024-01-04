@@ -5,7 +5,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication
 
 from .widgets import MainSplitter, ThumbnailsListView
-from src.beamer.document import BeamerDocument
+from src.beamer.document.document import BeamerDocument
 from src.beamer.page_info import PageInfo
 
 
@@ -182,7 +182,8 @@ class MainWindow(QtWidgets.QFrame):
         self._display_page(improvements_list[highlighted_idx])
 
     def _save_changes(self):
-        path = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save modified presentation', directory=self._doc_folder_path)[0]
+        path = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save modified presentation',
+                                                     directory=self._doc_folder_path)[0]
         if not path:
             return
         self._document.save(path)

@@ -17,7 +17,10 @@ class FrameCode:
         self.global_color_defs = global_color_defs
         self.bg_img_def = bg_img_def
 
-    def as_string(self) -> str:
+    def as_str(self) -> str:
+        """
+        :return: A full, compilable document, containing only this one frame.
+        """
         code = self.header + "\n"
 
         if self.global_color_defs:

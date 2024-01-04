@@ -13,7 +13,6 @@ class InvalidAlternativeIndex(ValueError):
 
 #############  INTERFACES  #############
 
-
 class ImprovementsManager:
     """Handles improvements generation and selection"""
 
@@ -61,6 +60,10 @@ class ImprovementsManager:
 
 
 class GlobalImprovementsManager(ImprovementsManager):
+    """A category for which all instances of the improvements manager share the selected version.
+        Note that due to how static variables work in Python, any subclass must manually define
+        a static _GLOBAL_OPT field."""
+
     def current_version(self) -> FrameCompiler:
         self._current_opt = type(self)._GLOBAL_OPT
         return super().current_version()
@@ -75,7 +78,6 @@ class GlobalImprovementsManager(ImprovementsManager):
 
 
 #############  FINAL IMPROVEMENT MANAGERS  #############
-
 
 class LocalImprovementsManager(ImprovementsManager):
     _PREFIX = "l"
@@ -101,6 +103,8 @@ class LocalImprovementsManager(ImprovementsManager):
             index_gen += 1
 
     def decorate(self, destination_code: FrameCode):
+        if self._current_opt is None:
+            return
         improved_code = self.current_version().code()
         destination_code.header = improved_code.header
         destination_code.base_code = improved_code.base_code
@@ -144,6 +148,8 @@ class BackgroundImprovementsManager(GlobalImprovementsManager):
             bg_idx += 1
 
     def decorate(self, destination_code: FrameCode):
+        if self._current_opt is None:
+            return
         destination_code.bg_img_def = self.current_version().code().bg_img_def
 
 
@@ -174,4 +180,6 @@ class ColorSetsImprovementsManager(GlobalImprovementsManager):
             index_gen += 1
 
     def decorate(self, destination_code: FrameCode):
+        if self._current_opt is None:
+            return
         destination_code.global_color_defs = self.current_version().code().global_color_defs

@@ -1,10 +1,10 @@
 import os
 from typing import Optional
 
-from . import tokens
-from .frame.frame import Frame
-from .frame.improvements import LocalImprovementsManager, BackgroundImprovementsManager, ColorSetsImprovementsManager
-from .page_info import PageInfo
+from src.beamer import tokens
+from src.beamer.frame.frame import Frame
+from src.beamer.frame.improvements import LocalImprovementsManager, BackgroundImprovementsManager, ColorSetsImprovementsManager
+from src.beamer.page_info import PageInfo
 from src.beautifier.color_generator import get_random_color_set
 
 
@@ -98,7 +98,7 @@ class BeamerDocument:
             fh.write(self._header)
             fh.write(f"\n{tokens.DOC_BEGIN}\n")
             for frame in self._frames:
-                fh.write("\n" + frame.code())
+                fh.write("\n" + frame.code().as_str())
             fh.write(self._post_frames_code)
             fh.write(f"\n{tokens.DOC_END}\n")
 

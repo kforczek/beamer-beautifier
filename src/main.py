@@ -5,7 +5,7 @@ from PyQt5 import QtWidgets
 
 from gui.app import run_app
 from gui.selector import get_user_document_path
-from beamer.document import BeamerDocument
+from beamer.document.document import BeamerDocument
 from examples.selector import select_example
 
 
@@ -18,6 +18,9 @@ def main():
 
     else:
         doc_path = get_user_document_path()[0]
+
+    if not doc_path:
+        return
 
     document = BeamerDocument(doc_path)
     run_app(app, document, os.path.dirname(doc_path))
