@@ -134,7 +134,8 @@ class Frame:
 
     def _generate_improvements(self):
         for improvements in (self._local_versions, self._background_versions, self._global_versions):
-            improvements.generate_improvements()
+            if not improvements.all_improvements():
+                improvements.generate_improvements()
         self._are_improvements_generated = True
 
     def _curr_page(self) -> PageInfo:

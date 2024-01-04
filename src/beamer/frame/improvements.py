@@ -148,8 +148,12 @@ class BackgroundImprovementsManager(GlobalImprovementsManager):
             bg_idx += 1
 
     def decorate(self, destination_code: FrameCode):
-        if self._current_opt is None:
+        if self.selected_index() == 0:
             return
+
+        if not self._versions:
+            self.generate_improvements()
+
         destination_code.bg_img_def = self.current_version().code().bg_img_def
 
 
@@ -180,6 +184,10 @@ class ColorSetsImprovementsManager(GlobalImprovementsManager):
             index_gen += 1
 
     def decorate(self, destination_code: FrameCode):
-        if self._current_opt is None:
+        if self.selected_index() == 0:
             return
+
+        if not self._versions:
+            self.generate_improvements()
+
         destination_code.global_color_defs = self.current_version().code().global_color_defs
