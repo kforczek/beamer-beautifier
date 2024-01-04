@@ -94,13 +94,16 @@ class BeamerDocument:
         if os.path.exists(output_path):
             os.remove(output_path)
 
+        improved_code = self._org_raw_code
+        global_colors_definitions = self._frames[0].improved_code().global_color_defs
+        if global_colors_definitions:
+            improved_code = improved_code.replace(self._header.rstrip(), self._header.rstrip() + "\n" + global_colors_definitions)
+
+        for frame in self._frames:
+            improved_code = improved_code.replace(frame.original_code().frame_str().strip(), frame.improved_code().frame_str().strip())
+
         with open(output_path, 'w') as fh:
-            fh.write(self._header)
-            fh.write(f"\n{tokens.DOC_BEGIN}\n")
-            for frame in self._frames:
-                fh.write("\n" + frame.code().as_str())
-            fh.write(self._post_frames_code)
-            fh.write(f"\n{tokens.DOC_END}\n")
+            fh.write(improved_code)
 
     def _check_path(self) -> None:
         if not os.path.exists(self._path) or not os.path.isfile(self._path):
@@ -113,17 +116,17 @@ class BeamerDocument:
         self._header = ""
         raw_frames = []
         with open(self._path, "r") as doc:
-            content = doc.read()
+            self._org_raw_code = doc.read()
 
-            if not tokens.BEAMER_DECL in content:
+            if not tokens.BEAMER_DECL in self._org_raw_code:
                 raise NotBeamerPresentation("Provided document is not a Beamer presentation.")
 
-            if content.count(tokens.FRAME_BEGIN) != content.count(tokens.FRAME_END):
+            if self._org_raw_code.count(tokens.FRAME_BEGIN) != self._org_raw_code.count(tokens.FRAME_END):
                 raise FrameCountError("Detected different numbers of frame begins and ends, this won't compile")
 
-            self._header = content[: content.find(tokens.DOC_BEGIN)]
-            self._post_frames_code = content[content.rfind(tokens.FRAME_END) + len(tokens.FRAME_END): content.rfind(tokens.DOC_END)]
-            raw_frames = content.split(tokens.FRAME_BEGIN)[1:]
+            self._header = self._org_raw_code[: self._org_raw_code.find(tokens.DOC_BEGIN)]
+            self._post_frames_code = self._org_raw_code[self._org_raw_code.rfind(tokens.FRAME_END) + len(tokens.FRAME_END): self._org_raw_code.rfind(tokens.DOC_END)]
+            raw_frames = self._org_raw_code.split(tokens.FRAME_BEGIN)[1:]
 
         doc_name = os.path.basename(self._path).rsplit('.', 1)[0].replace(' ', '_')
         idx_len = len(str(len(raw_frames)))

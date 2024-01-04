@@ -70,7 +70,7 @@ class Frame:
         self._background_versions = BackgroundImprovementsManager(self._original_version, self._name, self._tmp_dir_path)
         self._global_versions = ColorSetsImprovementsManager(original_code, self._name, self._tmp_dir_path)
 
-    def code(self) -> FrameCode:
+    def improved_code(self) -> FrameCode:
         """
         :return: LaTeX code of the frame (in currently selected version).
         """
@@ -79,6 +79,12 @@ class Frame:
             improvement.decorate(code)
 
         return code
+
+    def original_code(self) -> FrameCode:
+        """
+        :return: original (input) LaTeX code of the frame.
+        """
+        return self._original_version.code()
 
     def next_page(self) -> Optional[PageInfo]:
         """

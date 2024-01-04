@@ -17,7 +17,7 @@ class FrameCode:
         self.global_color_defs = global_color_defs
         self.bg_img_def = bg_img_def
 
-    def as_str(self) -> str:
+    def full_str(self) -> str:
         """
         :return: A full, compilable document, containing only this one frame.
         """
@@ -27,6 +27,16 @@ class FrameCode:
             code += self.global_color_defs + "\n"
 
         code += tokens.DOC_BEGIN + "\n"
+        code += self.frame_str()
+        code += tokens.DOC_END + "\n"
+
+        return code
+
+    def frame_str(self) -> str:
+        """
+        :return: A string representation of frame code that can be inserted anywhere in the document.
+        """
+        code = ""
 
         if self.bg_img_def:
             code += "{\n"
@@ -36,7 +46,5 @@ class FrameCode:
 
         if self.bg_img_def:
             code += "}\n"
-
-        code += tokens.DOC_END + "\n"
 
         return code

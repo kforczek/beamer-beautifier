@@ -34,7 +34,7 @@ class FrameCompiler:
     def _compile(self):
         try:
             with open(self._tmp_doc_path, "w") as tmp_file:
-                tmp_file.write(self._code.as_str())
+                tmp_file.write(self._code.full_str())
             pdf_path = compile_tex(self._tmp_doc_path)
             self._compiled_doc = fitz.open(pdf_path)
         except CompilationError:
