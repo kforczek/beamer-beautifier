@@ -132,13 +132,6 @@ class Frame:
         """
         return self._global_versions
 
-    # def select_local_alternative(self, idx: int):
-    #     """
-    #     Handles selection of the local frame alternative, identified by its index.
-    #     :param idx: index of the alternative frame to be selected
-    #     """
-    #     self._local_versions.select_alternative(idx)
-
     def _generate_improvements(self):
         for improvements in (self._local_versions, self._background_versions, self._global_versions):
             improvements.generate_improvements()

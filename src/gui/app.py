@@ -187,6 +187,7 @@ class MainWindow(QtWidgets.QFrame):
         if not path:
             return
         self._document.save(path)
+        self._splitter.notify_saved()
 
     def _update_save_button_state(self, new_selected_opt: int):
         changes_count = self._selected_local_opt + self._selected_background_opt + self._selected_global_opt
@@ -201,7 +202,7 @@ class MainWindow(QtWidgets.QFrame):
         super(MainWindow, self).showEvent(event)
 
     def closeEvent(self, a0: QtGui.QCloseEvent):
-        if not self._splitter.is_any_change_done():
+        if not self._splitter.any_change_done():
             a0.accept()
             return
 

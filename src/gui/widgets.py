@@ -19,13 +19,17 @@ class MainSplitter(QtWidgets.QSplitter):
         self.addWidget(self.right_pane)
         self.setSizes([970, 430])
 
+    def any_change_done(self):
+        return self._is_any_change
+
     def notify_change_done(self):
         """Receives the information about any improvement being selected."""
         self._is_any_change = True
         self.left_pane.function_buttons.save_button.setEnabled(True)
 
-    def is_any_change_done(self):
-        return self._is_any_change
+    def notify_saved(self):
+        self._is_any_change = False
+        self.left_pane.function_buttons.save_button.setEnabled(False)
 
 
 class MainSplitterLeftPane(QtWidgets.QWidget):
