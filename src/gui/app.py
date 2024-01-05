@@ -1,10 +1,9 @@
 import sys
-from typing import Optional
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication
 
-from .widgets import MainSplitter, ThumbnailsListView
+from .widgets import MainSplitter, ThumbnailsListView, InfiniteProgressDialog
 from src.beamer.document.document import BeamerDocument
 from src.beamer.page_info import PageInfo
 
@@ -134,10 +133,8 @@ class MainWindow(QtWidgets.QFrame):
     def _display_page(self, image_to_display=None):
         if image_to_display is None:
             image_to_display = self._original_page
-        #option = self._local_highlighted_opt if self._local_highlighted_opt is not None else self._selected_opt
         current_width = self._image_display.width()
         current_height = self._image_display.height()
-        #pixmap = self._curr_local_improvements[option].scaled(
         pixmap = image_to_display.scaled(
             current_width, current_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation
         )

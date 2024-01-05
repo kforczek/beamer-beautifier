@@ -171,3 +171,14 @@ class NavigationButton(QtWidgets.QPushButton):
 
     def sizeHint(self) -> QtCore.QSize:
         return QtCore.QSize(50, 50)
+
+
+class InfiniteProgressDialog(QtWidgets.QProgressDialog):
+    def __init__(self, parent: QtWidgets.QWidget, title: str, text: str):
+        super().__init__(parent)
+
+        self.setWindowTitle(title)
+        self.setLabelText(text)
+        self.setMinimum(0)
+        self.setMaximum(0)
+        self.setValue(0)
