@@ -5,7 +5,7 @@ from PyQt5 import QtWidgets
 
 from gui.app import run_app
 from gui.selector import get_user_document_path
-from beamer.document.document import BeamerDocument
+from src.beamer.document import BeamerDocument
 from examples.selector import select_example
 
 

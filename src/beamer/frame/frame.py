@@ -3,8 +3,8 @@ from typing import Optional, Any
 from copy import copy
 
 from src.beamer import tokens
-from src.beamer.compilation import create_temp_dir
-from src.beamer.document.compiler_interface import IBackgroundCompiler, PriorityLoadTask
+from src.beamer.compilation.compilation import create_temp_dir
+from src.beamer.compilation.loading_handler_iface import IPageLoadingHandler, PriorityLoadTask
 
 from src.beamer.page_getter import PageGetter
 from src.beamer.graphics import pixmap_from_document
@@ -34,7 +34,7 @@ class Frame:
     """Single Beamer frame"""
 
     def __init__(self, idx: int, name: str, src_dir_path: str, code: str,
-                 include_code: str, compiler: IBackgroundCompiler):
+                 include_code: str, compiler: IPageLoadingHandler):
         """
         :param idx: index of the frame (as it is located in the upper-level container).
         :param name: identifier that will be used to identify temporary TeX and PDF files resulting from this frame

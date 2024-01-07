@@ -3,16 +3,16 @@ from threading import Thread, Lock
 
 from src.beamer.frame.frame import Frame
 from src.beamer.graphics import pixmap_from_document
-from .compiler_interface import PriorityLoadTask, IBackgroundCompiler
+from .loading_handler_iface import PriorityLoadTask, IPageLoadingHandler
 
 
-class BackgroundCompiler(IBackgroundCompiler):
+class PageLoadingHandler(IPageLoadingHandler):
+    """A multi-threaded handler for performing compilation & loading tasks in the background."""
     def __init__(self):
         self._frames = []
         self._compiled_indexes = set()
         self._priority_task = None
         self._priority_lock = Lock()
-        self._stop_flag = False
 
     def init_frames(self, frames: List[Frame]):
         if self._frames:
@@ -22,9 +22,6 @@ class BackgroundCompiler(IBackgroundCompiler):
     def start(self):
         thread = Thread(target=self._run)
         thread.start()
-
-    def stop(self):
-        self._stop_flag = True
 
     def set_priority_task(self, priority_task: PriorityLoadTask):
         if priority_task.frame_idx in self._compiled_indexes:
@@ -37,12 +34,11 @@ class BackgroundCompiler(IBackgroundCompiler):
             self._priority_task = priority_task
 
     def _run(self):
-        while not self._stop_flag:
-            for idx in range(len(self._frames)):
-                while self._compile_priority():
-                    pass
+        for idx in range(len(self._frames)):
+            while self._compile_priority():
+                pass
 
-                self._compile_frame_silent(idx)
+            self._compile_frame_silent(idx)
 
     def _compile_priority(self) -> bool:
         with self._priority_lock:

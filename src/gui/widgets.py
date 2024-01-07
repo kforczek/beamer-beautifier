@@ -1,10 +1,9 @@
-from copy import deepcopy
-from typing import Optional, Callable, Any
+from typing import Optional
 
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QListWidgetItem
 
-from src.beamer.document.document import BeamerDocument
+from src.beamer.document import BeamerDocument
 
 
 class MainSplitter(QtWidgets.QSplitter):

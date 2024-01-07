@@ -1,6 +1,6 @@
 import fitz
 
-from src.beamer.compilation import compile_tex, CompilationError
+from src.beamer.compilation.compilation import compile_tex, CompilationError
 from .code import FrameCode
 
 

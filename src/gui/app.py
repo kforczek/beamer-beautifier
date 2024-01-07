@@ -4,7 +4,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication
 
 from .widgets import MainSplitter, ThumbnailsListView
-from src.beamer.document.document import BeamerDocument
+from src.beamer.document import BeamerDocument
 from src.beamer.page_getter import PageGetter
 
 

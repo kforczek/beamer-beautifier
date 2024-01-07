@@ -2,7 +2,7 @@ import os
 from typing import Optional, Any
 
 from src.beamer import tokens
-from src.beamer.document.background_compiler import BackgroundCompiler
+from src.beamer.compilation.loading_handler import PageLoadingHandler
 from src.beamer.frame.frame import Frame
 from src.beamer.frame.improvements import LocalImprovementsManager, BackgroundImprovementsManager, ColorSetsImprovementsManager
 from src.beamer.page_getter import PageGetter
@@ -136,7 +136,7 @@ class BeamerDocument:
         doc_name = os.path.basename(self._path).rsplit('.', 1)[0].replace(' ', '_')
         idx_len = len(str(len(raw_frames)))
 
-        compiler = BackgroundCompiler()
+        compiler = PageLoadingHandler()
         self._frames = []
         for idx, frame_code in enumerate(raw_frames):
             frame_code = frame_code[: frame_code.rfind(tokens.FRAME_END)]
