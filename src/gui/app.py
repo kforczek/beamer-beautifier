@@ -3,9 +3,9 @@ import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication
 
-from .widgets import MainSplitter, ThumbnailsListView, InfiniteProgressDialog
+from .widgets import MainSplitter, ThumbnailsListView
 from src.beamer.document.document import BeamerDocument
-from src.beamer.page_info import PageInfo
+from src.beamer.page_getter import PageGetter
 
 
 class EmptyDocumentError(ValueError):
@@ -45,90 +45,150 @@ class MainWindow(QtWidgets.QFrame):
 
     def _init_document_logic(self, document: BeamerDocument):
         self._document = document
-        page = self._document.next_page()
-        if not page:
-            raise EmptyDocumentError("The document doesn't contain any pages, got nothing to display")
 
         self._selected_local_opt = 0
         self._selected_background_opt = 0
         self._selected_global_opt = 0
+
+        self._curr_local_improvements = []
+        self._curr_background_improvements = []
+        self._curr_global_improvements = []
+
         self._local_highlighted_opt = None
         self._background_highlighted_opt = None
         self._global_highlighted_opt = None
-        self._local_thumb_items = []
-        self._background_thumb_items = []
-        self._global_thumb_items = []
-        self._load_page(page)
 
-    def _load_thumbnails(self):
-        self._load_specific_thumbnails(self._frame_thumbs_view, self._local_thumb_items)
-        self._load_specific_thumbnails(self._background_thumbs_view, self._background_thumb_items)
-        self._load_specific_thumbnails(self._global_thumbs_view, self._global_thumb_items)
+        self._current_page_getter = None
+        self._original_page = None
 
+        self._local_fillers_count = 0
+        self._background_fillers_count = 0
+        self._global_fillers_count = 0
+
+        self._next_page()
+        if not self._original_page:
+            raise EmptyDocumentError("The document doesn't contain any pages, got nothing to display")
+
+    def _add_local_version(self, pixmap):
+        self._local_fillers_count = self._add_version(
+            pixmap, self._curr_local_improvements, self._local_thumbs_view, self._lobcl_fillers_count)
         self._highlight_local_thumbnail()
+
+    def _add_background_version(self, pixmap):
+        self._background_fillers_count = self._add_version(
+            pixmap, self._curr_background_improvements, self._background_thumbs_view, self._background_fillers_count)
         self._highlight_background_thumbnail()
+
+    def _add_global_version(self, pixmap):
+        self._global_fillers_count = self._add_version(
+            pixmap, self._curr_global_improvements, self._global_thumbs_view, self._global_fillers_count)
         self._highlight_global_thumbnail()
 
-    def _load_specific_thumbnails(self, dest_listview, thumbnail_items):
-        dest_listview.clear()
+    def _add_version(self, pixmap, improvements_list, thumbs_view, fillers_counter) -> int:
+        """Adds version and returns the updated fillers counter."""
+        qt_pixmap = to_qt_pixmap(pixmap)
+        item = to_thumbnail_item(qt_pixmap)
+        if fillers_counter > 0:
+            improvements_list[-fillers_counter] = qt_pixmap
+            thumbs_view.replaceItem(-fillers_counter, item)
+            fillers_counter -= 1
+        else:
+            improvements_list.append(qt_pixmap)
+            thumbs_view.addItem(item)
 
-        for idx, item in enumerate(thumbnail_items):
-            dest_listview.addItem(item)
+        self._display_page()
+        return fillers_counter
 
     def _highlight_local_thumbnail(self):
-        item_to_highlight = self._local_thumb_items[self._selected_local_opt]
+        item_to_highlight = self._frame_thumbs_view.items()[self._selected_local_opt]
         self._frame_thumbs_view.setCurrentItem(item_to_highlight)
         self._local_highlighted_opt = self._selected_local_opt
 
     def _highlight_background_thumbnail(self):
-        item_to_highlight = self._background_thumb_items[self._selected_background_opt]
+        item_to_highlight = self._background_thumbs_view.items()[self._selected_background_opt]
         self._background_thumbs_view.setCurrentItem(item_to_highlight)
         self._background_highlighted_opt = self._selected_background_opt
 
     def _highlight_global_thumbnail(self):
-        item_to_highlight = self._global_thumb_items[self._selected_global_opt]
+        item_to_highlight = self._global_thumbs_view.items()[self._selected_global_opt]
         self._global_thumbs_view.setCurrentItem(item_to_highlight)
         self._global_highlighted_opt = self._selected_global_opt
 
     def _prev_page(self):
-        page = self._document.prev_page()
-        if not page:
+        self._prepare_page_getter()
+        original_page = self._document.prev_page(self._current_page_getter)
+        if not original_page:
             return
 
-        self._load_page(page)
+        self._prepare_page_load()
+        self._load_original_page(original_page)
 
     def _next_page(self):
-        page = self._document.next_page()
-        if not page:
+        self._prepare_page_getter()
+        original_page = self._document.next_page(self._current_page_getter)
+        if not original_page:
             return
 
-        self._load_page(page)
+        self._prepare_page_load()
+        self._load_original_page(original_page)
 
-    def _load_page(self, page_info: PageInfo):
-        self._local_thumb_items.clear()
-        self._background_thumb_items.clear()
-        self._global_thumb_items.clear()
+    def _prepare_page_getter(self):
+        if self._current_page_getter:
+            self._current_page_getter.cancel()
 
-        self._original_page = to_qt_pixmap(page_info.original_page)
+        self._current_page_getter = PageGetter(self._add_local_version, self._add_background_version,
+                                               self._add_global_version)
+
+    def _prepare_page_load(self):
+        self._curr_local_improvements.clear()
+        self._curr_background_improvements.clear()
+        self._curr_global_improvements.clear()
+
+        self._frame_thumbs_view.clear()
+        self._background_thumbs_view.clear()
+        self._global_thumbs_view.clear()
+
+        self._local_fillers_count = 0
+        self._background_fillers_count = 0
+        self._global_fillers_count = 0
+
+    def _load_original_page(self, pixmap):
+        self._original_page = to_qt_pixmap(pixmap)
+
         self._curr_local_improvements = [self._original_page]
         self._curr_background_improvements = [self._original_page]
         self._curr_global_improvements = [self._original_page]
 
-        self._curr_local_improvements.extend([to_qt_pixmap(page_opt) for page_opt in page_info.frame_improvements])
-        self._local_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_local_improvements]
-
-        self._curr_background_improvements.extend([to_qt_pixmap(page_opt) for page_opt in page_info.background_improvements])
-        self._background_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_background_improvements]
-
-        self._curr_global_improvements.extend([to_qt_pixmap(page_opt) for page_opt in page_info.global_improvements])
-        self._global_thumb_items = [to_thumbnail_item(improvement) for improvement in self._curr_global_improvements]
+        self._frame_thumbs_view.addItem(to_thumbnail_item(self._original_page))
+        self._background_thumbs_view.addItem(to_thumbnail_item(self._original_page))
+        self._global_thumbs_view.addItem(to_thumbnail_item(self._original_page))
 
         self._selected_local_opt = self._document.current_local_improvements().selected_index()
         self._selected_background_opt = self._document.current_background_improvements().selected_index()
         self._selected_global_opt = self._document.current_global_improvements().selected_index()
 
+        self._local_fillers_count = self._create_fillers(
+            self._selected_local_opt, self._curr_local_improvements, self._frame_thumbs_view)
+
+        self._background_fillers_count = self._create_fillers(
+            self._selected_background_opt, self._curr_background_improvements, self._background_thumbs_view)
+
+        self._global_fillers_count = self._create_fillers(
+            self._selected_global_opt, self._curr_global_improvements, self._global_thumbs_view)
+
         self._display_page()
-        self._load_thumbnails()
+        self._highlight_local_thumbnail()
+        self._highlight_background_thumbnail()
+        self._highlight_global_thumbnail()
+
+    def _create_fillers(self, count: int, improvements_list, thumbs_view):
+        """Creates filler improvements. Returns a number of how many were created."""
+        for _ in range(count):
+            filler_pixmap = self._original_page.copy()
+            filler_pixmap.fill(QtGui.QColor(200, 200, 200))
+            improvements_list.append(filler_pixmap)
+            thumbs_view.addItem(to_thumbnail_item(filler_pixmap))
+        return count
 
     def _display_page(self, image_to_display=None):
         if image_to_display is None:
@@ -144,29 +204,27 @@ class MainWindow(QtWidgets.QFrame):
         self._local_highlighted_opt = self._thumbnail_selection_changed(
             self._curr_local_improvements,
             self._frame_thumbs_view,
-            self._local_thumb_items,
             self._selected_local_opt)
 
     def _background_thumbnail_selection_changed(self):
         self._background_highlighted_opt = self._thumbnail_selection_changed(
             self._curr_background_improvements,
             self._background_thumbs_view,
-            self._background_thumb_items,
             self._selected_background_opt)
 
     def _global_thumbnail_selection_changed(self):
         self._global_highlighted_opt = self._thumbnail_selection_changed(
             self._curr_global_improvements,
             self._global_thumbs_view,
-            self._global_thumb_items,
             self._selected_global_opt)
 
-    def _thumbnail_selection_changed(self, improvements_list, thumbs_view: ThumbnailsListView, thumb_items, curr_selected_opt: int) -> int:
+    def _thumbnail_selection_changed(self, improvements_list, thumbs_view: ThumbnailsListView, curr_selected_opt: int) -> int:
         """
         Handles changes in highlighting of the thumbnails.
         :return: Index of the highlighted thumbnail.
         """
         highlighted_idx = thumbs_view.selectedIndex()
+        thumb_items = thumbs_view.items()
 
         if highlighted_idx in (None, curr_selected_opt) and len(thumb_items) > curr_selected_opt:
             thumbs_view.setCurrentItem(thumb_items[curr_selected_opt])

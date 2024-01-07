@@ -1,10 +1,11 @@
 import os
-from typing import Optional
+from typing import Optional, Any
 
 from src.beamer import tokens
+from src.beamer.document.background_compiler import BackgroundCompiler
 from src.beamer.frame.frame import Frame
 from src.beamer.frame.improvements import LocalImprovementsManager, BackgroundImprovementsManager, ColorSetsImprovementsManager
-from src.beamer.page_info import PageInfo
+from src.beamer.page_getter import PageGetter
 from src.beautifier.color_generator import get_random_color_set
 
 
@@ -31,9 +32,11 @@ class BeamerDocument:
         color_versions = [get_random_color_set() for _ in range(4)]
         ColorSetsImprovementsManager.define_color_sets(color_versions)
 
-    def next_page(self) -> Optional[PageInfo]:
+    def next_page(self, page_getter: PageGetter) -> Optional[Any]:
         """
-        :return: next page from the document as lists of PixMaps (first one is the original), or None if there is no next page.
+        Notifies the compiling thread to prioritize loading next page and load it version-by-version
+        into the provided page_getter.
+        :return: original version of the page, or None if there is no next page.
         """
         if self._current_frame >= len(self._frames):
             return None
@@ -41,17 +44,19 @@ class BeamerDocument:
         if self._current_frame < 0:
             self._current_frame = 0
 
-        page_from_frame = self._frames[self._current_frame].next_page()
+        page_from_frame = self._frames[self._current_frame].next_page(page_getter)
         if page_from_frame:
             return page_from_frame
 
         # No next page in current frame, go to the next one
         self._current_frame += 1
-        return self.next_page()
+        return self.next_page(page_getter)
 
-    def prev_page(self) -> Optional[PageInfo]:
+    def prev_page(self, page_getter: PageGetter) -> Optional[Any]:
         """
-        :return: previous page from the document as lists of PixMaps (first one is the original), or None if there is no previous page.
+        Notifies the compiling thread to prioritize loading previous page and load it version-by-version
+        into the provided page_getter.
+        :return: original version of the page, or None if there is no previous page.
         """
         if self._current_frame < 0:
             return None
@@ -59,13 +64,13 @@ class BeamerDocument:
         if self._current_frame >= len(self._frames):
             self._current_frame = len(self._frames) - 1
 
-        page_from_frame = self._frames[self._current_frame].prev_page()
+        page_from_frame = self._frames[self._current_frame].prev_page(page_getter)
         if page_from_frame:
             return page_from_frame
 
         # No previous page in current frame, go to the previous one
         self._current_frame -= 1
-        return self.prev_page()
+        return self.prev_page(page_getter)
 
     def current_local_improvements(self) -> LocalImprovementsManager:
         """
@@ -130,8 +135,10 @@ class BeamerDocument:
 
         doc_name = os.path.basename(self._path).rsplit('.', 1)[0].replace(' ', '_')
         idx_len = len(str(len(raw_frames)))
+
+        compiler = BackgroundCompiler()
         self._frames = []
-        for idx, frame_code in enumerate(raw_frames, start=1):
+        for idx, frame_code in enumerate(raw_frames):
             frame_code = frame_code[: frame_code.rfind(tokens.FRAME_END)]
             if tokens.FRAME_END in frame_code:
                 raise FrameCountError("Detected multiple consecutive frame ends, this won't compile")
@@ -139,7 +146,9 @@ class BeamerDocument:
             if not frame_code.endswith("\n"):
                 frame_code += "\n"
             frame_code = f"{tokens.FRAME_BEGIN}{frame_code}{tokens.FRAME_END}\n"
-            frame_filename = f"{doc_name}_frame{idx:0{idx_len}}"
+            frame_filename = f"{doc_name}_frame{idx+1:0{idx_len}}"
 
-            frame = Frame(frame_filename, os.path.dirname(self._path), frame_code, self._header)
+            frame = Frame(idx, frame_filename, os.path.dirname(self._path), frame_code, self._header, compiler)
             self._frames.append(frame)
+        compiler.init_frames(self._frames)
+        compiler.start()

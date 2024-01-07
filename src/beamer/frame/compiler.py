@@ -17,10 +17,14 @@ class FrameCompiler:
         """
         :return: Compiled PDF document resulting from the frame code.
         """
-        if not self._is_compiled:
-            self._compile()
-
+        self.compile()
         return self._compiled_doc
+
+    def compile(self):
+        if not self._is_compiled:
+            self._do_compile()
+
+        self._is_compiled = True
 
     def page_count(self):
         if self._page_count is None:
@@ -31,7 +35,7 @@ class FrameCompiler:
     def code(self):
         return self._code
 
-    def _compile(self):
+    def _do_compile(self):
         try:
             with open(self._tmp_doc_path, "w") as tmp_file:
                 tmp_file.write(self._code.full_str())
@@ -39,5 +43,3 @@ class FrameCompiler:
             self._compiled_doc = fitz.open(pdf_path)
         except CompilationError:
             print(f'Failed to compile improvement proposal: "{self._tmp_doc_path}"; will be ignored.')
-
-        self._is_compiled = True

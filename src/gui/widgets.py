@@ -1,4 +1,5 @@
-from typing import Optional
+from copy import deepcopy
+from typing import Optional, Callable, Any
 
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QListWidgetItem
@@ -147,9 +148,22 @@ class ThumbnailsListView(QtWidgets.QListWidget):
         self.setResizeMode(QtWidgets.QListWidget.Adjust)
         self.setMovement(QtWidgets.QListWidget.Static)
 
+    def items(self):
+        return self._items
+
     def addItem(self, aitem: QListWidgetItem) -> None:
         super().addItem(aitem)
         self._items.append(aitem)
+
+    def replaceItem(self, idx: int, new_item: QListWidgetItem):
+        if idx < 0:
+            idx += len(self._items)
+        self._items = [item.clone() for item in self._items]
+        self._items[idx] = new_item
+
+        super().clear()
+        for item in self._items:
+            super().addItem(item)
 
     def clear(self) -> None:
         super().clear()
@@ -173,12 +187,34 @@ class NavigationButton(QtWidgets.QPushButton):
         return QtCore.QSize(50, 50)
 
 
-class InfiniteProgressDialog(QtWidgets.QProgressDialog):
-    def __init__(self, parent: QtWidgets.QWidget, title: str, text: str):
-        super().__init__(parent)
-
-        self.setWindowTitle(title)
-        self.setLabelText(text)
-        self.setMinimum(0)
-        self.setMaximum(0)
-        self.setValue(0)
+# class WaitingDialogRunner(QtWidgets.QProgressDialog):
+#     class __OperationRunner(QtCore.QObject):
+#         def __init__(self, _operation: Callable):
+#             super().__init__()
+#             self.result = None
+#             self._operation = _operation
+#
+#         def run(self):
+#             self.result = self._operation()
+#
+#     def __init__(self, parent: QtWidgets.QWidget, operation: Callable, dialog_title="", dialog_text=""):
+#         super().__init__(parent)
+#
+#         self.setWindowTitle(dialog_title)
+#         self.setLabelText(dialog_text)
+#         self.setMinimum(0)
+#         self.setMaximum(0)
+#         self.setValue(0)
+#         self._runner = self.__OperationRunner(operation)
+#
+#     def run(self) -> Any:
+#         thread = QtCore.QThread()
+#         self._runner.moveToThread(thread)
+#         thread.started.connect(self._runner.run)
+#
+#         self.setVisible(True)
+#         thread.start()
+#         if not thread.wait():
+#             raise RuntimeError("Operation failed, what to do now?")
+#         self.setVisible(False)
+#         return self._runner.result

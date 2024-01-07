@@ -52,6 +52,17 @@ class ImprovementsManager:
 
     def generate_improvements(self):
         """Generates new set of improvements for the input (original) frame."""
+        self._versions.clear()
+        for _ in self.improvements_generator():
+            pass
+
+    def remove_improvement(self, improvement: FrameCompiler):
+        """Removes a generated improvement from the list. Useful if the FrameCompiler failed
+        to compile the improved document, which makes it essentially useless."""
+        self._versions.remove(improvement)
+
+    def improvements_generator(self):
+        """Returns a generator that internally adds the improvements while yielding them to the caller."""
         raise NotImplementedError("Override in subclasses")
 
     def decorate(self, destination_code: FrameCode):
@@ -89,8 +100,7 @@ class LocalImprovementsManager(ImprovementsManager):
         self._base_name = base_name
         self._tmp_dir_path = tmp_dir_path
 
-    def generate_improvements(self):
-        self._versions.clear()
+    def improvements_generator(self):
         index_gen = 0
         for improvement in self._GENERATORS:
             improved_code = improvement.improve(self._original_code)
@@ -100,6 +110,7 @@ class LocalImprovementsManager(ImprovementsManager):
             filename = f"{self._base_name}_{self._PREFIX}{index_gen}.tex"
             filepath = os.path.join(self._tmp_dir_path, filename)
             self._versions.append(FrameCompiler(improved_code, filepath))
+            yield self._versions[-1]
             index_gen += 1
 
     def decorate(self, destination_code: FrameCode):
@@ -121,8 +132,7 @@ class BackgroundImprovementsManager(GlobalImprovementsManager):
         self._base_name = base_name
         self._tmp_dir_path = tmp_dir_path
 
-    def generate_improvements(self):
-        self._versions.clear()
+    def improvements_generator(self):
         rect = self._original_version.doc().load_page(0).bound()
         original_code = self._original_version.code()
         dir_path = os.path.join(self._tmp_dir_path, "res")
@@ -145,6 +155,7 @@ class BackgroundImprovementsManager(GlobalImprovementsManager):
             tex_filename = f"{self._base_name}_{self._PREFIX}{bg_idx}.tex"
             tex_filepath = os.path.join(self._tmp_dir_path, tex_filename)
             self._versions.append(FrameCompiler(full_code, tex_filepath))
+            yield self._versions[-1]
             bg_idx += 1
 
     def decorate(self, destination_code: FrameCode):
@@ -172,8 +183,7 @@ class ColorSetsImprovementsManager(GlobalImprovementsManager):
         self._base_name = base_name
         self._tmp_dir_path = tmp_dir_path
 
-    def generate_improvements(self):
-        self._versions.clear()
+    def improvements_generator(self):
         index_gen = 0
         for colors in self._COLOR_SETS:
             code_with_colors = FrameCode(self._original_code.header, self._original_code.base_code,
@@ -181,6 +191,7 @@ class ColorSetsImprovementsManager(GlobalImprovementsManager):
             filename = f"{self._base_name}_{self._PREFIX}{index_gen}.tex"
             filepath = os.path.join(self._tmp_dir_path, filename)
             self._versions.append(FrameCompiler(code_with_colors, filepath))
+            yield self._versions[-1]
             index_gen += 1
 
     def decorate(self, destination_code: FrameCode):
