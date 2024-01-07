@@ -27,6 +27,12 @@ class BackgroundCompiler(IBackgroundCompiler):
         self._stop_flag = True
 
     def set_priority_task(self, priority_task: PriorityLoadTask):
+        if priority_task.frame_idx in self._compiled_indexes:
+            # Speed-up possible - the new thread will only read already compiled data
+            thread = Thread(target=self._compile_frame_with_output, args=(priority_task,))
+            thread.start()
+            return
+
         with self._priority_lock:
             self._priority_task = priority_task
 
@@ -95,3 +101,17 @@ class BackgroundCompiler(IBackgroundCompiler):
                 improvements.remove_improvement(version_to_remove)
 
         self._compiled_indexes.add(task_info.frame_idx)
+
+    # def _is_task_simple(self, task: PriorityLoadTask):
+    #     """True if the task involves only reading generated and compiled improvements - this would mean
+    #         that a new thread can be created for this task (no concurrent writing will be involved). False otherwise."""
+    #     frame = self._frames[task.frame_idx]
+    #
+    #     are_improvements_generated = False
+    #     for improvements in (frame.local_improvements(), frame.background_improvements(), frame.global_improvements()):
+    #         for version in improvements.all_improvements():
+    #             are_improvements_generated = True
+    #             if not version.is_compiled():
+    #                 return False
+    #
+    #     return are_improvements_generated

@@ -71,7 +71,7 @@ class MainWindow(QtWidgets.QFrame):
 
     def _add_local_version(self, pixmap):
         self._local_fillers_count = self._add_version(
-            pixmap, self._curr_local_improvements, self._local_thumbs_view, self._lobcl_fillers_count)
+            pixmap, self._curr_local_improvements, self._frame_thumbs_view, self._local_fillers_count)
         self._highlight_local_thumbnail()
 
     def _add_background_version(self, pixmap):

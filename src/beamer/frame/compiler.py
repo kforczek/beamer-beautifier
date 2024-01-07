@@ -35,6 +35,9 @@ class FrameCompiler:
     def code(self):
         return self._code
 
+    def is_compiled(self):
+        return self._is_compiled
+
     def _do_compile(self):
         try:
             with open(self._tmp_doc_path, "w") as tmp_file:
