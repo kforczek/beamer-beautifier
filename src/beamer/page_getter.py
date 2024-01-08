@@ -16,9 +16,9 @@ class PageGetter(QtCore.QObject):
         :param global_version_slot: The function that gets called when a new global version becomes available.
         """
         super().__init__()
-        self.local_version_available.connect(local_version_slot)
-        self.background_version_available.connect(background_version_slot)
-        self.global_version_available.connect(global_version_slot)
+        self.local_version_available.connect(lambda pixmap: local_version_slot(pixmap, self))
+        self.background_version_available.connect(lambda pixmap: background_version_slot(pixmap, self))
+        self.global_version_available.connect(lambda pixmap: global_version_slot(pixmap, self))
 
         self._is_canceled = False
         self._checker_lock = Lock()

@@ -1,5 +1,6 @@
 import sys
 
+from threading import Lock
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication
 
@@ -58,6 +59,7 @@ class MainWindow(QtWidgets.QFrame):
         self._background_highlighted_opt = None
         self._global_highlighted_opt = None
 
+        self._page_getter_lock = Lock()
         self._current_page_getter = None
         self._original_page = None
 
@@ -69,17 +71,32 @@ class MainWindow(QtWidgets.QFrame):
         if not self._original_page:
             raise EmptyDocumentError("The document doesn't contain any pages, got nothing to display")
 
-    def _add_local_version(self, pixmap):
+    def _check_caller(self, caller: PageGetter):
+        """Checks whether the calling PageGetter is still allowed to send updates (if not, it means that the
+        page has been changed and updates from any old PageGetters are irrelevant)."""
+        with self._page_getter_lock:
+            return caller is self._current_page_getter
+
+    def _add_local_version(self, pixmap, caller: PageGetter):
+        if not self._check_caller(caller):
+            return
+
         self._local_fillers_count = self._add_version(
             pixmap, self._curr_local_improvements, self._frame_thumbs_view, self._local_fillers_count)
         self._highlight_local_thumbnail()
 
-    def _add_background_version(self, pixmap):
+    def _add_background_version(self, pixmap, caller: PageGetter):
+        if not self._check_caller(caller):
+            return
+
         self._background_fillers_count = self._add_version(
             pixmap, self._curr_background_improvements, self._background_thumbs_view, self._background_fillers_count)
         self._highlight_background_thumbnail()
 
-    def _add_global_version(self, pixmap):
+    def _add_global_version(self, pixmap, caller: PageGetter):
+        if not self._check_caller(caller):
+            return
+
         self._global_fillers_count = self._add_version(
             pixmap, self._curr_global_improvements, self._global_thumbs_view, self._global_fillers_count)
         self._highlight_global_thumbnail()
@@ -133,11 +150,12 @@ class MainWindow(QtWidgets.QFrame):
         self._load_original_page(original_page)
 
     def _prepare_page_getter(self):
-        if self._current_page_getter:
-            self._current_page_getter.cancel()
+        with self._page_getter_lock:
+            if self._current_page_getter:
+                self._current_page_getter.cancel()
 
-        self._current_page_getter = PageGetter(self._add_local_version, self._add_background_version,
-                                               self._add_global_version)
+            self._current_page_getter = PageGetter(self._add_local_version, self._add_background_version,
+                                                   self._add_global_version)
 
     def _prepare_page_load(self):
         self._curr_local_improvements.clear()
