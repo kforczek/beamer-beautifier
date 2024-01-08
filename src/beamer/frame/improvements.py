@@ -52,7 +52,6 @@ class ImprovementsManager:
 
     def generate_improvements(self):
         """Generates new set of improvements for the input (original) frame."""
-        self._versions.clear()
         for _ in self.improvements_generator():
             pass
 
@@ -101,6 +100,7 @@ class LocalImprovementsManager(ImprovementsManager):
         self._tmp_dir_path = tmp_dir_path
 
     def improvements_generator(self):
+        self._versions.clear()
         index_gen = 0
         for improvement in self._GENERATORS:
             improved_code = improvement.improve(self._original_code)
@@ -133,6 +133,7 @@ class BackgroundImprovementsManager(GlobalImprovementsManager):
         self._tmp_dir_path = tmp_dir_path
 
     def improvements_generator(self):
+        self._versions.clear()
         rect = self._original_version.doc().load_page(0).bound()
         original_code = self._original_version.code()
         dir_path = os.path.join(self._tmp_dir_path, "res")
@@ -184,6 +185,7 @@ class ColorSetsImprovementsManager(GlobalImprovementsManager):
         self._tmp_dir_path = tmp_dir_path
 
     def improvements_generator(self):
+        self._versions.clear()
         index_gen = 0
         for colors in self._COLOR_SETS:
             code_with_colors = FrameCode(self._original_code.header, self._original_code.base_code,

@@ -37,6 +37,7 @@ class MainWindow(QtWidgets.QFrame):
         self._background_thumbs_view = self._splitter.right_pane.background_tab.thumbs_view
         self._global_thumbs_view = self._splitter.right_pane.global_tab.thumbs_view
 
+        self._splitter.right_pane.background_tab.function_buttons.regenerate_button.clicked.connect(self._regenerate_backgrounds_click)
         self._splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
         self._splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
         self._frame_thumbs_view.itemClicked.connect(lambda _: self._local_thumbnail_selection_changed())
@@ -148,6 +149,17 @@ class MainWindow(QtWidgets.QFrame):
 
         self._prepare_page_load()
         self._load_original_page(original_page)
+
+    def _regenerate_backgrounds_click(self):
+        if not self._current_page_getter:
+            self._prepare_page_getter()
+
+        self._curr_background_improvements = [self._original_page]
+        self._background_thumbs_view.clear()
+        self._background_thumbs_view.addItem(to_thumbnail_item(self._original_page))
+        self._background_fillers_count = 0
+
+        self._document.regenerate_background_improvements(self._current_page_getter)
 
     def _prepare_page_getter(self):
         with self._page_getter_lock:

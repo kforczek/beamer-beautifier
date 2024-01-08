@@ -8,6 +8,10 @@ class PriorityLoadTask:
         self.page_getter = page_getter
 
 
+class BackgroundRegenerationTask(PriorityLoadTask):
+    pass
+
+
 class IPageLoadingHandler:
     def set_priority_task(self, priority_task: PriorityLoadTask):
         raise NotImplementedError("Override in subclass")

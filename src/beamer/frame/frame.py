@@ -4,7 +4,8 @@ from copy import copy
 
 from src.beamer import tokens
 from src.beamer.compilation.compilation import create_temp_dir
-from src.beamer.compilation.loading_handler_iface import IPageLoadingHandler, PriorityLoadTask
+from src.beamer.compilation.loading_handler_iface import IPageLoadingHandler, PriorityLoadTask, \
+    BackgroundRegenerationTask
 
 from src.beamer.page_getter import PageGetter
 from src.beamer.graphics import pixmap_from_document
@@ -34,7 +35,7 @@ class Frame:
     """Single Beamer frame"""
 
     def __init__(self, idx: int, name: str, src_dir_path: str, code: str,
-                 include_code: str, compiler: IPageLoadingHandler):
+                 include_code: str, compiler: IPageLoadingHandler, is_first: bool, is_last: bool):
         """
         :param idx: index of the frame (as it is located in the upper-level container).
         :param name: identifier that will be used to identify temporary TeX and PDF files resulting from this frame
@@ -42,6 +43,8 @@ class Frame:
         :param code: source code of the frame itself, encapsuled by \begin{frame} and \end{frame} commands
         :param include_code: optional LaTeX code snippet containing package includes
         :param compiler: handler for multithreading compilation
+        :param is_first: information whether this frame is first in the source document
+        :param is_last: information whether this frame is first in the source document
         """
 
         self._check_init_conditions(code, name)
@@ -53,10 +56,12 @@ class Frame:
 
         self._tmp_dir_path = create_temp_dir(self._src_dir)
         self._current_page = -1
-        self._are_improvements_generated = False
 
         original_code = FrameCode(include_code, code)
         self._init_improvements(original_code)
+
+        self._min_page_val = 0 if is_first else -1
+        self._max_page_val = self._original_version.page_count() - 1 if is_last else self._original_version.page_count()
 
     def improved_code(self) -> FrameCode:
         """
@@ -81,10 +86,11 @@ class Frame:
         loading corresponding improvements.
         :return: next page from the original PDF file, or None if there is no next page.
         """
-        self._current_page += 1
-        if self._current_page >= self._original_version.page_count():
+        if self._current_page >= self._original_version.page_count() - 1:
+            self._current_page = self._max_page_val
             return None
 
+        self._current_page += 1
         return self._load_current_page(page_getter)
 
     def prev_page(self, page_getter: PageGetter) -> Optional[Any]:
@@ -93,11 +99,19 @@ class Frame:
         loading corresponding improvements.
         :return: previous page from the original PDF file, or None if there is no previous page.
         """
-        self._current_page -= 1
-        if self._current_page < 0:
+        if self._current_page <= 0:
+            self._current_page = self._min_page_val
             return None
 
+        self._current_page -= 1
         return self._load_current_page(page_getter)
+
+    def regenerate_background_improvements(self, page_getter: PageGetter) -> None:
+        """
+        Notifies the compiling thread to prioritize regenerating background improvements for the current page.
+        """
+        task = BackgroundRegenerationTask(self._idx, self._current_page, page_getter)
+        self._compiler.set_priority_task(task)
 
     def local_improvements(self) -> LocalImprovementsManager:
         """

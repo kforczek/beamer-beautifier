@@ -97,7 +97,6 @@ class ImprovementsTab(QtWidgets.QWidget):
         self.function_buttons = FunctionButtonsLayout()
 
         self.function_buttons.choose_button.clicked.connect(self._choose_button_click)
-        self.function_buttons.regenerate_button.clicked.connect(self._regenerate_button_click)
 
         layout.addWidget(self.thumbs_view)
         layout.addLayout(self.function_buttons)
@@ -108,10 +107,6 @@ class ImprovementsTab(QtWidgets.QWidget):
         if improvements_mgr.selected_index() != selected_idx:
             self._main_splitter.notify_change_done()
         improvements_mgr.select_alternative(selected_idx)
-
-    def _regenerate_button_click(self):
-        self._improvements_getter().generate_improvements()
-        # TODO invalidate currently displayed thumbnails
 
 
 class FunctionButtonsLayout(QtWidgets.QHBoxLayout):

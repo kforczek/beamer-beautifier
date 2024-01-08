@@ -72,6 +72,13 @@ class BeamerDocument:
         self._current_frame -= 1
         return self.prev_page(page_getter)
 
+    def regenerate_background_improvements(self, page_getter: PageGetter) -> None:
+        """
+        Notifies the compiling thread to prioritize regenerating background improvements for the current page
+        and load them version-by-version into the provided page_getter.
+        """
+        self._frames[self._current_frame].regenerate_background_improvements(page_getter)
+
     def current_local_improvements(self) -> LocalImprovementsManager:
         """
         :return: local improvements manager for the current frame.
@@ -148,7 +155,8 @@ class BeamerDocument:
             frame_code = f"{tokens.FRAME_BEGIN}{frame_code}{tokens.FRAME_END}\n"
             frame_filename = f"{doc_name}_frame{idx+1:0{idx_len}}"
 
-            frame = Frame(idx, frame_filename, os.path.dirname(self._path), frame_code, self._header, compiler)
+            frame = Frame(idx, frame_filename, os.path.dirname(self._path),
+                          frame_code, self._header, compiler, idx == 0, idx == len(raw_frames)-1)
             self._frames.append(frame)
         compiler.init_frames(self._frames)
         compiler.start()

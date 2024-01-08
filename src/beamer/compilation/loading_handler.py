@@ -3,7 +3,7 @@ from threading import Thread, Lock
 
 from src.beamer.frame.frame import Frame
 from src.beamer.graphics import pixmap_from_document
-from .loading_handler_iface import PriorityLoadTask, IPageLoadingHandler
+from .loading_handler_iface import PriorityLoadTask, BackgroundRegenerationTask, IPageLoadingHandler
 
 
 class PageLoadingHandler(IPageLoadingHandler):
@@ -24,7 +24,7 @@ class PageLoadingHandler(IPageLoadingHandler):
         thread.start()
 
     def set_priority_task(self, priority_task: PriorityLoadTask):
-        if priority_task.frame_idx in self._compiled_indexes:
+        if not isinstance(priority_task, BackgroundRegenerationTask) and priority_task.frame_idx in self._compiled_indexes:
             # Speed-up possible - the new thread will only read already compiled data
             thread = Thread(target=self._compile_frame_with_output, args=(priority_task,))
             thread.start()
@@ -74,40 +74,43 @@ class PageLoadingHandler(IPageLoadingHandler):
         self._compiled_indexes.add(frame_idx)
 
     def _compile_frame_with_output(self, task_info: PriorityLoadTask):
+        if isinstance(task_info, BackgroundRegenerationTask):
+            self._regenerate_backgrounds_with_output(task_info)
+            return
+
         frame = self._frames[task_info.frame_idx]
         for improvements, notify_slot in ((frame.local_improvements(), task_info.page_getter.add_local_version),
                                           (frame.background_improvements(), task_info.page_getter.add_background_version),
                                           (frame.global_improvements(), task_info.page_getter.add_global_version)):
-
-            if task_info.frame_idx in self._compiled_indexes:
-                improvements_source = improvements.all_improvements()
-            else:
-                improvements_source = improvements.improvements_generator()
-
-            useless_versions = []
-            for version in improvements_source:
-                doc = version.doc()
-                if not doc:
-                    useless_versions.append(version)
-                    continue
-                pixmap = pixmap_from_document(doc, task_info.page_idx)
-                notify_slot(pixmap)
-
-            for version_to_remove in useless_versions:
-                improvements.remove_improvement(version_to_remove)
+            regenerate = task_info.frame_idx not in self._compiled_indexes
+            _compile_improvements_category_with_output(improvements, notify_slot, task_info.page_idx, regenerate)
 
         self._compiled_indexes.add(task_info.frame_idx)
 
-    # def _is_task_simple(self, task: PriorityLoadTask):
-    #     """True if the task involves only reading generated and compiled improvements - this would mean
-    #         that a new thread can be created for this task (no concurrent writing will be involved). False otherwise."""
-    #     frame = self._frames[task.frame_idx]
-    #
-    #     are_improvements_generated = False
-    #     for improvements in (frame.local_improvements(), frame.background_improvements(), frame.global_improvements()):
-    #         for version in improvements.all_improvements():
-    #             are_improvements_generated = True
-    #             if not version.is_compiled():
-    #                 return False
-    #
-    #     return are_improvements_generated
+    def _regenerate_backgrounds_with_output(self, task_info: BackgroundRegenerationTask):
+        self._compiled_indexes.remove(task_info.frame_idx)
+
+        improvements = self._frames[task_info.frame_idx].background_improvements()
+        notify_slot = task_info.page_getter.add_background_version
+        _compile_improvements_category_with_output(improvements, notify_slot, task_info.page_idx, True)
+
+        self._compiled_indexes.add(task_info.frame_idx)
+
+
+def _compile_improvements_category_with_output(improvements, notify_slot, page_idx, regenerate):
+    if regenerate:
+        improvements_source = improvements.improvements_generator()
+    else:
+        improvements_source = improvements.all_improvements()
+
+    useless_versions = []
+    for version in improvements_source:
+        doc = version.doc()
+        if not doc:
+            useless_versions.append(version)
+            continue
+        pixmap = pixmap_from_document(doc, page_idx)
+        notify_slot(pixmap)
+
+    for version_to_remove in useless_versions:
+        improvements.remove_improvement(version_to_remove)
