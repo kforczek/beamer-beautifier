@@ -14,6 +14,7 @@ from .code import FrameCode
 from .compiler import FrameCompiler
 from .improvements import (LocalImprovementsManager,
                            BackgroundImprovementsManager, ColorSetsImprovementsManager)
+from ...beautifier.background_generator import FrameProgressInfo
 
 
 class FrameBeginError(Exception):
@@ -35,32 +36,32 @@ class BaseFrameCompilationError(RuntimeError):
 class Frame:
     """Single Beamer frame"""
 
-    def __init__(self, idx: int, name: str, src_dir_path: str, code: str,
-                 include_code: str, compiler: IPageLoadingHandler, is_first: bool, is_last: bool):
+    def __init__(self, name: str, src_dir_path: str, code: str,
+                 include_code: str, compiler: IPageLoadingHandler, progress_info: FrameProgressInfo):
         """
-        :param idx: index of the frame (as it is located in the upper-level container).
         :param name: identifier that will be used to identify temporary TeX and PDF files resulting from this frame
         :param src_dir_path: path to the directory where the document containing the frame is located
         :param code: source code of the frame itself, encapsuled by \begin{frame} and \end{frame} commands
         :param include_code: optional LaTeX code snippet containing package includes
         :param compiler: handler for multithreading compilation
-        :param is_first: information whether this frame is first in the source document
-        :param is_last: information whether this frame is first in the source document
+        :param progress_info: information about the frame location in the source document
         """
 
         _check_init_conditions(code, name)
 
-        self._idx = idx
         self._name = name
         self._src_dir = src_dir_path
         self._compiler = compiler
+        self._idx = progress_info.frame_idx
 
         self._tmp_dir_path = create_temp_dir(self._src_dir)
         self._current_page = -1
 
         original_code = FrameCode(include_code, code)
-        self._init_improvements(original_code)
+        self._init_improvements(original_code, progress_info)
 
+        is_first = progress_info.frame_idx == 0
+        is_last = progress_info.frame_idx == progress_info.frame_cnt - 1
         self._min_page_val = 0 if is_first else -1
         self._max_page_val = self._original_version.page_count() - 1 if is_last else self._original_version.page_count()
 
@@ -149,14 +150,15 @@ class Frame:
 
         shutil.copy2(src_filepath, full_dest_dir)
 
-    def _init_improvements(self, original_code: FrameCode):
+    def _init_improvements(self, original_code: FrameCode, progress_info: FrameProgressInfo):
         org_filepath = os.path.join(self._tmp_dir_path, f"{self._name}_org.tex")
         self._original_version = FrameCompiler(original_code, org_filepath)
         if not self._original_version.doc():
             raise BaseFrameCompilationError("Compilation failed for an original frame - this is a critical error")
 
         self._local_versions = LocalImprovementsManager(original_code, self._name, self._tmp_dir_path)
-        self._background_versions = BackgroundImprovementsManager(self._original_version, self._name, self._tmp_dir_path)
+        self._background_versions = BackgroundImprovementsManager(
+            self._original_version, self._name, self._tmp_dir_path, progress_info)
         self._global_versions = ColorSetsImprovementsManager(original_code, self._name, self._tmp_dir_path)
 
     def _load_current_page(self, page_getter: PageGetter):

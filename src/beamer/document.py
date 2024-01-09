@@ -6,6 +6,7 @@ from src.beamer.compilation.loading_handler import PageLoadingHandler
 from src.beamer.frame.frame import Frame
 from src.beamer.frame.improvements import LocalImprovementsManager, BackgroundImprovementsManager, ColorSetsImprovementsManager
 from src.beamer.page_getter import PageGetter
+from src.beautifier.background_generator import FrameProgressInfo
 from src.beautifier.color_generator import get_random_color_set
 
 
@@ -157,9 +158,10 @@ class BeamerDocument:
                 frame_code += "\n"
             frame_code = f"{tokens.FRAME_BEGIN}{frame_code}{tokens.FRAME_END}\n"
             frame_filename = f"{doc_name}_frame{idx+1:0{idx_len}}"
+            progress_info = FrameProgressInfo(idx, len(raw_frames))
 
-            frame = Frame(idx, frame_filename, os.path.dirname(self._path),
-                          frame_code, self._header, compiler, idx == 0, idx == len(raw_frames)-1)
+            frame = Frame(frame_filename, os.path.dirname(self._path),
+                          frame_code, self._header, compiler, progress_info)
             self._frames.append(frame)
         compiler.init_frames(self._frames)
         compiler.start()

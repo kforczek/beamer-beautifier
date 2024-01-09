@@ -1,4 +1,5 @@
 import os.path
+from copy import copy
 from typing import Tuple, Optional
 import random
 from PIL import Image, ImageDraw
@@ -25,7 +26,7 @@ class BackgroundGenerator:
         """
         :param file_path: path of the destination file.
         :param resolution: width and height of the presentation (in pixels).
-        :param progress_info: additional information about the frame that can affect the generated result.
+        :param progress_info: optional information about the frame position in the original document.
         """
         raise NotImplementedError("Override in subclasses")
 
@@ -37,6 +38,16 @@ class RandomCirclesBackground(BackgroundGenerator):
     CIRCLE_RADIUS_MAX = 60
     CIRCLES_OPACITY = 128
     MAX_FAILED_PLACEMENTS = 5
+
+    SMALL_COLUMN_HEIGHT_MIN = 20
+    SMALL_COLUMN_HEIGHT_MAX = 40
+    LARGE_COLUMN_HEIGHT_MIN = 80
+    LARGE_COLUMN_HEIGHT_MAX = 120
+    COLUMNS_WIDTH = 5
+    COLUMNS_COUNT = 100
+    MEDIUM_COLUMNS_COUNT = 16
+    LARGE_COLUMNS_COUNT = 15
+    column_heights = []  # heights of the progress bar columns (if included)
 
     class __Circle:
         BOUNDING_BOX_SIZE = 30
@@ -60,6 +71,10 @@ class RandomCirclesBackground(BackgroundGenerator):
 
         img = Image.new(mode="RGB", size=resolution, color="white")
         self._draw_circles(img, circle_defs)
+
+        if progress_info:
+            column_defs = self._generate_progress_columns(progress_info)
+            self._draw_progress_columns(img, resolution, column_defs)
 
         img.save(file_path)
 
@@ -93,6 +108,86 @@ class RandomCirclesBackground(BackgroundGenerator):
         for circle in circle_defs:
             col = RandomColor(self._randomizer).as_tuple()
             draw.ellipse((circle.top_left, circle.bottom_right), fill=(col[0], col[1], col[2], self.CIRCLES_OPACITY))
+
+    def _draw_progress_columns(self, img: Image, img_resolution, column_defs):
+        x_start = round(img_resolution[0] * 0.1)
+        x_end = round(img_resolution[0] * 0.9)
+        x_step = (x_end - x_start) // self.COLUMNS_COUNT
+        y_bottom = round(img_resolution[1] * 0.95)
+        draw = ImageDraw.Draw(img)
+
+        x = x_start
+        for column_height in column_defs:
+            c0 = (x, y_bottom - column_height)
+            c1 = (x + self.COLUMNS_WIDTH, y_bottom)
+            draw.rectangle((c0, c1), fill="black")
+
+            x += x_step
+
+    def _generate_progress_columns(self, progress_info: FrameProgressInfo) -> list[int]:
+        if not self.column_heights:
+            self._prepare_progress_columns()
+
+        local_heights = copy(self.column_heights)
+        progress_mid_point = round(progress_info.frame_idx * self.COLUMNS_COUNT / (progress_info.frame_cnt - 1))
+
+        # Large columns
+        left = progress_mid_point - self.LARGE_COLUMNS_COUNT // 2
+        right = progress_mid_point + self.LARGE_COLUMNS_COUNT // 2
+        self._randomize_selected_columns(local_heights, left, right, self.LARGE_COLUMN_HEIGHT_MIN, self.LARGE_COLUMN_HEIGHT_MAX)
+
+        # Medium columns - to the left of the mid-point
+        right = progress_mid_point - self.LARGE_COLUMNS_COUNT // 2
+        left = right - self.MEDIUM_COLUMNS_COUNT // 2
+        self._randomize_medium_columns(local_heights, left, right)
+
+        # Medium columns - to the right of the mid-point
+        left = progress_mid_point + self.LARGE_COLUMNS_COUNT // 2
+        right = left + self.MEDIUM_COLUMNS_COUNT // 2
+        self._randomize_medium_columns(local_heights, right, left)  # reversed range - the columns should be getting bigger from right to left
+
+        return local_heights
+
+    def _randomize_selected_columns(self, heights_list, left_idx, right_idx, min_val, max_val):
+        left_idx = max(0, min(self.COLUMNS_COUNT, left_idx))
+        right_idx = max(0, min(self.COLUMNS_COUNT, right_idx))
+
+        if right_idx - left_idx <= 0:
+            return
+
+        for idx in range(left_idx, right_idx):
+            heights_list[idx] = random.randint(min_val, max_val)
+
+    def _randomize_medium_columns(self, heights_list, left_idx, right_idx):
+        left_idx = max(0, min(self.COLUMNS_COUNT, left_idx))
+        right_idx = max(0, min(self.COLUMNS_COUNT, right_idx))
+        if left_idx == right_idx:
+            return
+
+        if left_idx < right_idx:
+            step = 1
+        else:
+            left_idx = max(0, left_idx-1)
+            right_idx = max(0, right_idx-1)
+            step = -1
+
+        curr_height_min = self.SMALL_COLUMN_HEIGHT_MAX
+        curr_height_max = (self.SMALL_COLUMN_HEIGHT_MAX + self.LARGE_COLUMN_HEIGHT_MIN) // 2
+
+        total_min = curr_height_max
+        total_max = (self.LARGE_COLUMN_HEIGHT_MIN + self.LARGE_COLUMN_HEIGHT_MAX) // 2
+
+        for idx in range(left_idx, right_idx, step):
+            heights_list[idx] = random.randint(curr_height_min,  curr_height_max)
+
+            curr_height_min = min(curr_height_min + 5, total_min)
+            curr_height_max = min(curr_height_max + 3, total_max)
+
+    @classmethod
+    def _prepare_progress_columns(cls):
+        for _ in range(cls.COLUMNS_COUNT):
+            col_height = random.randint(cls.SMALL_COLUMN_HEIGHT_MIN, cls.SMALL_COLUMN_HEIGHT_MAX)
+            cls.column_heights.append(col_height)
 
 
 def get_backgrounds() -> list[BackgroundGenerator]:

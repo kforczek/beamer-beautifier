@@ -4,7 +4,7 @@ from typing import List
 from .code import FrameCode
 from .compiler import FrameCompiler
 from src.beautifier.frame_generator import get_local_generators
-from src.beautifier.background_generator import get_backgrounds
+from src.beautifier.background_generator import get_backgrounds, FrameProgressInfo
 
 
 class InvalidAlternativeIndex(ValueError):
@@ -126,11 +126,13 @@ class BackgroundImprovementsManager(GlobalImprovementsManager):
     _GENERATORS = get_backgrounds()
     _GLOBAL_OPT = None
 
-    def __init__(self, original_frame_version: FrameCompiler, base_name: str, tmp_dir_path: str):
+    def __init__(self, original_frame_version: FrameCompiler, base_name: str, tmp_dir_path: str,
+                 progress_info: FrameProgressInfo):
         super().__init__()
         self._original_version = original_frame_version
         self._base_name = base_name
         self._tmp_dir_path = tmp_dir_path
+        self._progress_info = progress_info
 
     def improvements_generator(self):
         RES_FOLDER_NAME = "res"
@@ -149,7 +151,7 @@ class BackgroundImprovementsManager(GlobalImprovementsManager):
             img_full_filepath = os.path.join(dir_path, img_filename)
             img_relative_filepath = os.path.join(RES_FOLDER_NAME, img_filename)
 
-            background.generate_background(img_full_filepath, (rect.width, rect.height), None)  # TODO frame idx etc
+            background.generate_background(img_full_filepath, (rect.width, rect.height), self._progress_info)
 
             full_code = FrameCode(original_code.header, original_code.base_code,
                                   original_code.global_color_defs, img_relative_filepath)
