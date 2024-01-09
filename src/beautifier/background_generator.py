@@ -129,7 +129,7 @@ class RandomCirclesBackground(BackgroundGenerator):
             self._prepare_progress_columns()
 
         local_heights = copy(self.column_heights)
-        progress_mid_point = round(progress_info.frame_idx * self.COLUMNS_COUNT / (progress_info.frame_cnt - 1))
+        progress_mid_point = round((progress_info.frame_idx+1) * self.COLUMNS_COUNT / progress_info.frame_cnt)
 
         # Large columns
         left = progress_mid_point - self.LARGE_COLUMNS_COUNT // 2
