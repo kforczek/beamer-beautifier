@@ -53,7 +53,7 @@ class MainSplitterRightPane(QtWidgets.QTabWidget):
         super().__init__(parent)
 
         self.frame_tab = ImprovementsTab(self, parent, document.current_local_improvements)
-        self.background_tab = ImprovementsTab(self, parent, document.current_background_improvements)
+        self.background_tab = ImprovementsTab(self, parent, document.current_background_improvements, True)
         self.global_tab = ImprovementsTab(self, parent, document.current_global_improvements)
 
         self.addTab(self.frame_tab, "Content alignment")
@@ -85,7 +85,8 @@ class GlobalButtonsLayout(QtWidgets.QHBoxLayout):
 
 
 class ImprovementsTab(QtWidgets.QWidget):
-    def __init__(self, parent: QtWidgets.QWidget, main_splitter: MainSplitter, improvements_getter):
+    def __init__(self, parent: QtWidgets.QWidget, main_splitter: MainSplitter,
+                 improvements_getter, regenerate_button=False):
         super().__init__(parent)
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -94,7 +95,7 @@ class ImprovementsTab(QtWidgets.QWidget):
         self._main_splitter = main_splitter
 
         self.thumbs_view = ThumbnailsListView(self)
-        self.function_buttons = FunctionButtonsLayout()
+        self.function_buttons = FunctionButtonsLayout(regenerate_button)
 
         self.function_buttons.choose_button.clicked.connect(self._choose_button_click)
 
@@ -110,16 +111,17 @@ class ImprovementsTab(QtWidgets.QWidget):
 
 
 class FunctionButtonsLayout(QtWidgets.QHBoxLayout):
-    def __init__(self):
+    def __init__(self, regenerate_button=False):
         super().__init__()
 
         self.choose_button = QtWidgets.QPushButton("Choose this version")
-        self.regenerate_button = QtWidgets.QPushButton("Regenerate")
-
         self.addWidget(self.choose_button)
-        self.addWidget(self.regenerate_button)
         self.setAlignment(self.choose_button, QtCore.Qt.AlignmentFlag.AlignLeft)
-        self.setAlignment(self.regenerate_button, QtCore.Qt.AlignmentFlag.AlignRight)
+
+        if regenerate_button:
+            self.regenerate_button = QtWidgets.QPushButton("Regenerate")
+            self.addWidget(self.regenerate_button)
+            self.setAlignment(self.regenerate_button, QtCore.Qt.AlignmentFlag.AlignRight)
 
 
 class ImageDisplay(QtWidgets.QLabel):
