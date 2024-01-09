@@ -1,4 +1,5 @@
 import os
+import shutil
 from typing import Optional, Any
 from copy import copy
 
@@ -47,7 +48,7 @@ class Frame:
         :param is_last: information whether this frame is first in the source document
         """
 
-        self._check_init_conditions(code, name)
+        _check_init_conditions(code, name)
 
         self._idx = idx
         self._name = name
@@ -131,15 +132,22 @@ class Frame:
         """
         return self._global_versions
 
-    def _check_init_conditions(self, frame_code: str, frame_name: str):
-        if not frame_code.lstrip().startswith(tokens.FRAME_BEGIN):
-            raise FrameBeginError(f"Frame code should begin with \"{tokens.FRAME_BEGIN}\"")
+    def save_resources(self, dest_folder: str):
+        """
+        Saves any resources (generated background images) that this frame instance might be using. The resources are
+        copied to the destination folder. The folder is created if it didn't exist before.
+        """
+        background_code = self._background_versions.current_version().code()
+        if not background_code.bg_img_path:
+            return
 
-        if not frame_code.rstrip().endswith(tokens.FRAME_END):
-            raise FrameEndError(f"Frame code should end with \"{tokens.FRAME_END}\"")
+        src_filepath = os.path.join(self._tmp_dir_path, background_code.bg_img_path)
+        full_dest_dir = os.path.join(dest_folder, os.path.dirname(background_code.bg_img_path))
 
-        if not frame_name.isidentifier():
-            raise FrameNameError("Frame name cannot contain non-alphanumerical characters except underscores")
+        if not os.path.exists(full_dest_dir):
+            os.mkdir(full_dest_dir)
+
+        shutil.copy2(src_filepath, full_dest_dir)
 
     def _init_improvements(self, original_code: FrameCode):
         org_filepath = os.path.join(self._tmp_dir_path, f"{self._name}_org.tex")
@@ -160,3 +168,14 @@ class Frame:
         for improvements in (self._local_versions, self._background_versions, self._global_versions):
             if not improvements.all_improvements():
                 improvements.generate_improvements()
+
+
+def _check_init_conditions(frame_code: str, frame_name: str):
+    if not frame_code.lstrip().startswith(tokens.FRAME_BEGIN):
+        raise FrameBeginError(f"Frame code should begin with \"{tokens.FRAME_BEGIN}\"")
+
+    if not frame_code.rstrip().endswith(tokens.FRAME_END):
+        raise FrameEndError(f"Frame code should end with \"{tokens.FRAME_END}\"")
+
+    if not frame_name.isidentifier():
+        raise FrameNameError("Frame name cannot contain non-alphanumerical characters except underscores")

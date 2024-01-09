@@ -157,7 +157,10 @@ class MainWindow(QtWidgets.QFrame):
         self._curr_background_improvements = [self._original_page]
         self._background_thumbs_view.clear()
         self._background_thumbs_view.addItem(to_thumbnail_item(self._original_page))
-        self._background_fillers_count = 0
+        self._background_fillers_count = self._create_fillers(
+            self._document.current_background_improvements().selected_index(),
+            self._curr_background_improvements,
+            self._background_thumbs_view)
 
         self._document.regenerate_background_improvements(self._current_page_getter)
 

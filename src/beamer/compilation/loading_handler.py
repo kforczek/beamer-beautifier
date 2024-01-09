@@ -11,8 +11,12 @@ class PageLoadingHandler(IPageLoadingHandler):
     def __init__(self):
         self._frames = []
         self._compiled_indexes = set()
+
         self._priority_task = None
         self._priority_lock = Lock()
+
+        self._finished_lock = Lock()
+        self._compiling_thread_finished = False
 
     def init_frames(self, frames: List[Frame]):
         if self._frames:
@@ -33,12 +37,22 @@ class PageLoadingHandler(IPageLoadingHandler):
         with self._priority_lock:
             self._priority_task = priority_task
 
+            with self._finished_lock:
+                if not self._compiling_thread_finished:
+                    return
+
+        # Thread has finished - to resolve the priority task call a new thread needs to be created
+        thread = Thread(target=self._compile_priority)
+        thread.start()
+
     def _run(self):
         for idx in range(len(self._frames)):
             while self._compile_priority():
                 pass
 
             self._compile_frame_silent(idx)
+
+        self._safe_finish_work()
 
     def _compile_priority(self) -> bool:
         with self._priority_lock:
@@ -95,6 +109,21 @@ class PageLoadingHandler(IPageLoadingHandler):
         _compile_improvements_category_with_output(improvements, notify_slot, task_info.page_idx, True)
 
         self._compiled_indexes.add(task_info.frame_idx)
+
+    def _safe_finish_work(self):
+        """Try to set finished flag, but compile any priorities if they arise in the meantime."""
+        any_remaining_priorities = True
+        while any_remaining_priorities:
+            self._priority_lock.acquire()
+            if self._priority_task:
+                self._priority_lock.release()
+                self._compile_priority()
+                continue
+
+            any_remaining_priorities = False
+            with self._finished_lock:
+                self._compiling_thread_finished = True
+            self._priority_lock.release()
 
 
 def _compile_improvements_category_with_output(improvements, notify_slot, page_idx, regenerate):

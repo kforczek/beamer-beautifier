@@ -42,7 +42,7 @@ class ItemizeIndentIncrease(FrameImprovement):
         code = frame_code.base_code
         items_begin = code.find(tokens.ITEMIZE_BEGIN) + len(tokens.ITEMIZE_BEGIN)
         items_to_center = code[: items_begin] + tokens.items_indent(2) + code[items_begin:]
-        return FrameCode(frame_code.header, items_to_center, frame_code.global_color_defs, frame_code.bg_img_def)
+        return FrameCode(frame_code.header, items_to_center, frame_code.global_color_defs, frame_code.bg_img_path)
 
 
 class ListToTable(FrameImprovement):
@@ -78,7 +78,7 @@ class ListToTable(FrameImprovement):
             pre_code = f"{split_code.pre_list_code} \\\\"
 
         return FrameCode(frame_code.header, f"{pre_code}{changed_snippet}{split_code.post_list_code}",
-                         frame_code.global_color_defs, frame_code.bg_img_def)
+                         frame_code.global_color_defs, frame_code.bg_img_path)
 
     def _split_top_list_items(self, frame_code: str) -> SplitCode:
         if frame_code in self._cache:

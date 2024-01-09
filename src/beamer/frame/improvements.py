@@ -133,25 +133,26 @@ class BackgroundImprovementsManager(GlobalImprovementsManager):
         self._tmp_dir_path = tmp_dir_path
 
     def improvements_generator(self):
+        RES_FOLDER_NAME = "res"
+
         self._versions.clear()
         rect = self._original_version.doc().load_page(0).bound()
         original_code = self._original_version.code()
-        dir_path = os.path.join(self._tmp_dir_path, "res")
+        dir_path = os.path.join(self._tmp_dir_path, RES_FOLDER_NAME)
 
         if not os.path.exists(dir_path):
             os.mkdir(dir_path)
 
         bg_idx = 0
         for background in self._GENERATORS:
-            img_filepath = os.path.join(dir_path, f"{self._base_name}_bg{bg_idx}.png")
-            background.generate_background(img_filepath, (rect.width, rect.height), None)  # TODO frame idx etc
+            img_filename = f"{self._base_name}_bg{bg_idx}.png"
+            img_full_filepath = os.path.join(dir_path, img_filename)
+            img_relative_filepath = os.path.join(RES_FOLDER_NAME, img_filename)
 
-            bg_include_stmt = r"""\setbeamertemplate{background} 
-    {
-        \includegraphics[width=\paperwidth,height=\paperheight]{""" + img_filepath + "}\n}"
+            background.generate_background(img_full_filepath, (rect.width, rect.height), None)  # TODO frame idx etc
 
             full_code = FrameCode(original_code.header, original_code.base_code,
-                                  original_code.global_color_defs, bg_include_stmt)
+                                  original_code.global_color_defs, img_relative_filepath)
 
             tex_filename = f"{self._base_name}_{self._PREFIX}{bg_idx}.tex"
             tex_filepath = os.path.join(self._tmp_dir_path, tex_filename)
@@ -166,7 +167,7 @@ class BackgroundImprovementsManager(GlobalImprovementsManager):
         if not self._versions:
             self.generate_improvements()
 
-        destination_code.bg_img_def = self.current_version().code().bg_img_def
+        destination_code.bg_img_path = self.current_version().code().bg_img_path
 
 
 class ColorSetsImprovementsManager(GlobalImprovementsManager):
@@ -189,7 +190,7 @@ class ColorSetsImprovementsManager(GlobalImprovementsManager):
         index_gen = 0
         for colors in self._COLOR_SETS:
             code_with_colors = FrameCode(self._original_code.header, self._original_code.base_code,
-                                         colors, self._original_code.bg_img_def)
+                                         colors, self._original_code.bg_img_path)
             filename = f"{self._base_name}_{self._PREFIX}{index_gen}.tex"
             filepath = os.path.join(self._tmp_dir_path, filename)
             self._versions.append(FrameCompiler(code_with_colors, filepath))

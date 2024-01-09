@@ -103,6 +103,7 @@ class BeamerDocument:
         """
         if not output_path.endswith('.tex'):
             output_path = output_path + ".tex"
+
         if os.path.exists(output_path):
             os.remove(output_path)
 
@@ -111,8 +112,10 @@ class BeamerDocument:
         if global_colors_definitions:
             improved_code = improved_code.replace(self._header.rstrip(), self._header.rstrip() + "\n" + global_colors_definitions)
 
+        output_dir = os.path.dirname(output_path)
         for frame in self._frames:
             improved_code = improved_code.replace(frame.original_code().frame_str().strip(), frame.improved_code().frame_str().strip())
+            frame.save_resources(output_dir)
 
         with open(output_path, 'w') as fh:
             fh.write(improved_code)
