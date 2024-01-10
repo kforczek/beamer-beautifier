@@ -32,7 +32,8 @@ class MainWindow(QtWidgets.QFrame):
         layout.addWidget(self._splitter)
 
         self._image_display = self._splitter.left_pane.image_display
-        self._save_button = self._splitter.left_pane.function_buttons.save_button
+        self._info_layout = self._splitter.left_pane.save_info_layout.info_layout
+        self._save_button = self._splitter.left_pane.save_info_layout.save_button
         self._frame_thumbs_view = self._splitter.right_pane.frame_tab.thumbs_view
         self._background_thumbs_view = self._splitter.right_pane.background_tab.thumbs_view
         self._global_thumbs_view = self._splitter.right_pane.global_tab.thumbs_view
@@ -140,6 +141,7 @@ class MainWindow(QtWidgets.QFrame):
 
         self._prepare_page_load()
         self._load_original_page(original_page)
+        self._info_layout.prev_page()
 
     def _next_page(self):
         self._prepare_page_getter()
@@ -149,6 +151,7 @@ class MainWindow(QtWidgets.QFrame):
 
         self._prepare_page_load()
         self._load_original_page(original_page)
+        self._info_layout.next_page()
 
     def _regenerate_backgrounds_click(self):
         if not self._current_page_getter:

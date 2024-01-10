@@ -108,6 +108,12 @@ class Frame:
         self._current_page -= 1
         return self._load_current_page(page_getter)
 
+    def page_count(self):
+        """
+        :return: count of all pages in the frame.
+        """
+        return self._original_version.page_count()
+
     def regenerate_background_improvements(self, page_getter: PageGetter) -> None:
         """
         Notifies the compiling thread to prioritize regenerating background improvements for the current page.

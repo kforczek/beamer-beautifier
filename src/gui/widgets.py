@@ -12,7 +12,7 @@ class MainSplitter(QtWidgets.QSplitter):
 
         self._is_any_change = False
 
-        self.left_pane = MainSplitterLeftPane(self)
+        self.left_pane = MainSplitterLeftPane(self, document)
         self.right_pane = MainSplitterRightPane(self, document)
 
         self.addWidget(self.left_pane)
@@ -25,26 +25,26 @@ class MainSplitter(QtWidgets.QSplitter):
     def notify_change_done(self):
         """Receives the information about any improvement being selected."""
         self._is_any_change = True
-        self.left_pane.function_buttons.save_button.setEnabled(True)
+        self.left_pane.save_info_layout.save_button.setEnabled(True)
 
     def notify_saved(self):
         self._is_any_change = False
-        self.left_pane.function_buttons.save_button.setEnabled(False)
+        self.left_pane.save_info_layout.save_button.setEnabled(False)
 
 
 class MainSplitterLeftPane(QtWidgets.QWidget):
-    def __init__(self, parent: MainSplitter):
+    def __init__(self, parent: MainSplitter, document: BeamerDocument):
         super().__init__(parent)
 
         layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(layout)
 
         self.image_display = ImageDisplay(self)
-        self.function_buttons = GlobalButtonsLayout()
+        self.save_info_layout = SaveAndInfoLayout(document)
         self.navigation_buttons = NavigationButtonsLayout()
 
         layout.addWidget(self.image_display)
-        layout.addLayout(self.function_buttons)
+        layout.addLayout(self.save_info_layout)
         layout.addLayout(self.navigation_buttons)
 
 
@@ -73,15 +73,51 @@ class NavigationButtonsLayout(QtWidgets.QHBoxLayout):
         self.addWidget(self.next_button)
 
 
-class GlobalButtonsLayout(QtWidgets.QHBoxLayout):
-    def __init__(self):
+class SaveAndInfoLayout(QtWidgets.QHBoxLayout):
+    def __init__(self, document: BeamerDocument):
         super().__init__()
 
         self.save_button = QtWidgets.QPushButton("Save changes")
         self.save_button.setEnabled(False)
+        self.info_layout = InfoLayout(document)
 
         self.addWidget(self.save_button)
+        self.addLayout(self.info_layout)
+
         self.setAlignment(self.save_button, QtCore.Qt.AlignmentFlag.AlignLeft)
+        self.setAlignment(self.info_layout, QtCore.Qt.AlignmentFlag.AlignRight)
+
+
+class InfoLayout(QtWidgets.QVBoxLayout):
+    def __init__(self, document: BeamerDocument):
+        super().__init__()
+
+        self.frame_progress_label = QtWidgets.QLabel("")
+        self.page_progress_label = QtWidgets.QLabel("")
+
+        self.addWidget(self.frame_progress_label)
+        self.addWidget(self.page_progress_label)
+
+        self._document = document
+        self._page_idx = 0
+        self._frame_count = document.frame_count()
+        self._page_count = document.page_count()
+
+    def next_page(self):
+        """Increases the displayed page counter. Updates the frame counter, if necessary."""
+        self._page_idx += 1
+        self.page_progress_label.setText(f"Page: {self._page_idx} of {self._page_count}")
+        self._update_frame_counter()
+
+    def prev_page(self):
+        """Decreases the displayed page counter. Updates the frame counter, if necessary."""
+        self._page_idx -= 1
+        self.page_progress_label.setText(f"Page: {self._page_idx} of {self._page_count}")
+        self._update_frame_counter()
+
+    def _update_frame_counter(self):
+        frame_number = self._document.current_frame_idx() + 1
+        self.frame_progress_label.setText(f"Frame: {frame_number} of {self._frame_count}")
 
 
 class ImprovementsTab(QtWidgets.QWidget):

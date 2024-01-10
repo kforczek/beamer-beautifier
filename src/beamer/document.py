@@ -28,6 +28,7 @@ class BeamerDocument:
         self._path = doc_path
         self._check_path()
         self._split_frames()
+        self._page_count = sum([frame.page_count() for frame in self._frames])
         self._current_frame = -1
 
         color_versions = [get_random_color_set() for _ in range(4)]
@@ -97,6 +98,24 @@ class BeamerDocument:
         :return: global improvements manager for the current frame.
         """
         return self._frames[self._current_frame].global_improvements()
+
+    def current_frame_idx(self) -> int:
+        """
+        :return: index of the currently opened frame (starting at 0).
+        """
+        return self._current_frame
+
+    def frame_count(self) -> int:
+        """
+        :return: count of all frames in the document.
+        """
+        return len(self._frames)
+
+    def page_count(self) -> int:
+        """
+        :return: count of all pages in the document.
+        """
+        return self._page_count
 
     def save(self, output_path: str):
         """
