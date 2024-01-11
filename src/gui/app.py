@@ -313,8 +313,10 @@ class MainWindow(QtWidgets.QFrame):
         self._goto_dialog = GoToDialog(self, self._document)
         self._goto_dialog.show()
         self._goto_dialog.ok_button.clicked.connect(self._goto_dialog_accepted)
+        self._goto_dialog.canceled.connect(self._goto_dialog_canceled)
 
     def _goto_dialog_accepted(self):
+        self._goto_dialog.canceled.disconnect()
         self._goto_dialog.close()
 
         selected_idx = self._goto_dialog.number.value() - 1
@@ -323,6 +325,10 @@ class MainWindow(QtWidgets.QFrame):
         else:
             self._goto_frame(selected_idx)
 
+        self._goto_dialog.destroy()
+        self._goto_dialog = None
+
+    def _goto_dialog_canceled(self):
         self._goto_dialog.destroy()
         self._goto_dialog = None
 

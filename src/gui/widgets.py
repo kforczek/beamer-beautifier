@@ -228,6 +228,8 @@ class NavigationButton(QtWidgets.QPushButton):
 
 
 class GoToDialog(QtWidgets.QDialog):
+    canceled = QtCore.pyqtSignal()
+
     def __init__(self, parent, document: BeamerDocument):
         super().__init__(parent)
 
@@ -268,6 +270,10 @@ class GoToDialog(QtWidgets.QDialog):
             return
 
         self.number.setMaximum(self._document.frame_count())
+
+    def closeEvent(self, a0) -> None:
+        super().closeEvent(a0)
+        self.canceled.emit()
 
 
 # class WaitingDialogRunner(QtWidgets.QProgressDialog):
