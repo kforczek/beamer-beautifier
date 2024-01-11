@@ -22,8 +22,7 @@ def main():
     if not doc_path:
         return
 
-    document = BeamerDocument(doc_path)
-    run_app(app, document, os.path.dirname(doc_path))
+    run_app(app, doc_path, os.path.dirname(doc_path))
 
 
 if __name__ == '__main__':

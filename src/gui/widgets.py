@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Callable
 
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QListWidgetItem
@@ -276,34 +276,44 @@ class GoToDialog(QtWidgets.QDialog):
         self.canceled.emit()
 
 
-# class WaitingDialogRunner(QtWidgets.QProgressDialog):
-#     class __OperationRunner(QtCore.QObject):
-#         def __init__(self, _operation: Callable):
-#             super().__init__()
-#             self.result = None
-#             self._operation = _operation
-#
-#         def run(self):
-#             self.result = self._operation()
-#
-#     def __init__(self, parent: QtWidgets.QWidget, operation: Callable, dialog_title="", dialog_text=""):
-#         super().__init__(parent)
-#
-#         self.setWindowTitle(dialog_title)
-#         self.setLabelText(dialog_text)
-#         self.setMinimum(0)
-#         self.setMaximum(0)
-#         self.setValue(0)
-#         self._runner = self.__OperationRunner(operation)
-#
-#     def run(self) -> Any:
-#         thread = QtCore.QThread()
-#         self._runner.moveToThread(thread)
-#         thread.started.connect(self._runner.run)
-#
-#         self.setVisible(True)
-#         thread.start()
-#         if not thread.wait():
-#             raise RuntimeError("Operation failed, what to do now?")
-#         self.setVisible(False)
-#         return self._runner.result
+class WaitingDialogRunner(QtWidgets.QProgressDialog):
+    finished = QtCore.pyqtSignal(object)
+
+    class __OperationRunner(QtCore.QObject):
+        result_available = QtCore.pyqtSignal(object)
+
+        def __init__(self, _operation: Callable):
+            super().__init__()
+            self._operation = _operation
+
+        def run(self):
+            result = self._operation()
+            self.result_available.emit(result)
+
+    def __init__(self, operation: Callable, dialog_title="", dialog_text=""):
+        """
+        :param operation: operation to perform - will be called in a separate QThread.
+        :param dialog_title: title of the waiting dialog window.
+        :param dialog_text: text of the waiting dialog window.
+        """
+        super().__init__()
+
+        self.setWindowTitle(dialog_title)
+        self.setLabelText(dialog_text)
+        self.setMinimum(0)
+        self.setMaximum(0)
+        self.setValue(0)
+        self._runner = self.__OperationRunner(operation)
+        self._runner.result_available.connect(self._result_available)
+
+    def start(self):
+        thread = QtCore.QThread(self)
+        self._runner.moveToThread(thread)
+        thread.started.connect(self._runner.run)
+
+        self.show()
+        thread.start()
+
+    def _result_available(self, result: object):
+        self.finished.emit(result)
+        self.close()

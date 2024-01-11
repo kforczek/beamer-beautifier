@@ -4,7 +4,7 @@ from threading import Lock
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication
 
-from .widgets import MainSplitter, ThumbnailsListView, GoToDialog
+from .widgets import MainSplitter, ThumbnailsListView, GoToDialog, WaitingDialogRunner
 from src.beamer.document import BeamerDocument
 from src.beamer.page_getter import PageGetter
 
@@ -14,8 +14,8 @@ class EmptyDocumentError(ValueError):
 
 
 class MainWindow(QtWidgets.QFrame):
-    def __init__(self, document: BeamerDocument, doc_folder_path: str, parent=None):
-        super().__init__(parent)
+    def __init__(self, document: BeamerDocument, doc_folder_path: str):
+        super().__init__()
 
         self._init_ui(document)
         self._init_document_logic(document)
@@ -370,7 +370,16 @@ def to_thumbnail_item(qt_pixmap):
     return item
 
 
-def run_app(app: QApplication, document: BeamerDocument, doc_folder: str):
-    viewer = MainWindow(document, doc_folder)
-    viewer.show()
+def run_app(app: QApplication, doc_path: str, doc_folder: str):
+    def document_compiled(document: BeamerDocument):
+        viewer = MainWindow(document, doc_folder)
+        viewer.show()
+
+    dialog_title = "Loading..."
+    dialog_text = "Please wait while the document is loaded."
+
+    runner = WaitingDialogRunner(lambda: BeamerDocument(doc_path), dialog_title, dialog_text)
+    runner.finished.connect(document_compiled)
+    runner.start()
+
     sys.exit(app.exec_())
