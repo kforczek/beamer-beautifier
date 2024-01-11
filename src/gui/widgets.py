@@ -92,11 +92,13 @@ class InfoLayout(QtWidgets.QVBoxLayout):
     def __init__(self, document: BeamerDocument):
         super().__init__()
 
-        self.frame_progress_label = QtWidgets.QLabel("")
         self.page_progress_label = QtWidgets.QLabel("")
+        self.frame_progress_label = QtWidgets.QLabel("")
+        self.goto_button = QtWidgets.QPushButton("Go to...")
 
-        self.addWidget(self.frame_progress_label)
         self.addWidget(self.page_progress_label)
+        self.addWidget(self.frame_progress_label)
+        self.addWidget(self.goto_button)
 
         self._document = document
         self._page_idx = 0
@@ -112,6 +114,12 @@ class InfoLayout(QtWidgets.QVBoxLayout):
     def prev_page(self):
         """Decreases the displayed page counter. Updates the frame counter, if necessary."""
         self._page_idx -= 1
+        self.page_progress_label.setText(f"Page: {self._page_idx} of {self._page_count}")
+        self._update_frame_counter()
+
+    def update(self):
+        """Auto-updates counters basing on document information."""
+        self._page_idx = self._document.current_page_idx() + 1
         self.page_progress_label.setText(f"Page: {self._page_idx} of {self._page_count}")
         self._update_frame_counter()
 
@@ -217,6 +225,49 @@ class NavigationButton(QtWidgets.QPushButton):
 
     def sizeHint(self) -> QtCore.QSize:
         return QtCore.QSize(50, 50)
+
+
+class GoToDialog(QtWidgets.QDialog):
+    def __init__(self, parent, document: BeamerDocument):
+        super().__init__(parent)
+
+        self._document = document
+
+        self.page_option = QtWidgets.QRadioButton("Page")
+        self.frame_option = QtWidgets.QRadioButton("Frame")
+        self.number = QtWidgets.QSpinBox()
+        self.ok_button = QtWidgets.QPushButton("OK")
+
+        radiobuttons = QtWidgets.QHBoxLayout()
+        radiobuttons.addWidget(self.page_option)
+        radiobuttons.addWidget(self.frame_option)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addLayout(radiobuttons)
+        layout.addWidget(self.number)
+        layout.addWidget(self.ok_button)
+
+        self.setWindowTitle("Go to...")
+        self.setLayout(layout)
+
+        self.page_option.setChecked(True)
+        self.number.setMinimum(1)
+        self.number.setMaximum(self._document.page_count())
+
+        self.page_option.toggled.connect(self._page_option_toggled)
+        self.frame_option.toggled.connect(self._frame_option_toggled)
+
+    def _page_option_toggled(self, is_checked: bool):
+        if not is_checked:
+            return
+
+        self.number.setMaximum(self._document.page_count())
+
+    def _frame_option_toggled(self, is_checked: bool):
+        if not is_checked:
+            return
+
+        self.number.setMaximum(self._document.frame_count())
 
 
 # class WaitingDialogRunner(QtWidgets.QProgressDialog):

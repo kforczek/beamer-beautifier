@@ -4,7 +4,7 @@ from threading import Lock
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication
 
-from .widgets import MainSplitter, ThumbnailsListView
+from .widgets import MainSplitter, ThumbnailsListView, GoToDialog
 from src.beamer.document import BeamerDocument
 from src.beamer.page_getter import PageGetter
 
@@ -22,7 +22,7 @@ class MainWindow(QtWidgets.QFrame):
         self._doc_folder_path = doc_folder_path
 
     def _init_ui(self, document: BeamerDocument):
-        self.resize(1500, 870)
+        self.resize(1500, 920)
         self.setWindowTitle('Beamer Beautifier')
 
         layout = QtWidgets.QHBoxLayout()
@@ -37,10 +37,12 @@ class MainWindow(QtWidgets.QFrame):
         self._frame_thumbs_view = self._splitter.right_pane.frame_tab.thumbs_view
         self._background_thumbs_view = self._splitter.right_pane.background_tab.thumbs_view
         self._global_thumbs_view = self._splitter.right_pane.global_tab.thumbs_view
+        self._goto_dialog = None
 
         self._splitter.right_pane.background_tab.function_buttons.regenerate_button.clicked.connect(self._regenerate_backgrounds_click)
         self._splitter.left_pane.navigation_buttons.prev_button.clicked.connect(self._prev_page)
         self._splitter.left_pane.navigation_buttons.next_button.clicked.connect(self._next_page)
+        self._splitter.left_pane.save_info_layout.info_layout.goto_button.clicked.connect(self._goto_button_click)
         self._frame_thumbs_view.itemClicked.connect(lambda _: self._local_thumbnail_selection_changed())
         self._background_thumbs_view.itemClicked.connect(lambda _: self._background_thumbnail_selection_changed())
         self._global_thumbs_view.itemClicked.connect(lambda _: self._global_thumbnail_selection_changed())
@@ -152,6 +154,26 @@ class MainWindow(QtWidgets.QFrame):
         self._prepare_page_load()
         self._load_original_page(original_page)
         self._info_layout.next_page()
+
+    def _goto_page(self, page_idx):
+        self._prepare_page_getter()
+        original_page = self._document.goto_page(page_idx, self._current_page_getter)
+        if not original_page:
+            return
+
+        self._prepare_page_load()
+        self._load_original_page(original_page)
+        self._info_layout.update()
+
+    def _goto_frame(self, frame_idx):
+        self._prepare_page_getter()
+        original_page = self._document.goto_frame(frame_idx, self._current_page_getter)
+        if not original_page:
+            return
+
+        self._prepare_page_load()
+        self._load_original_page(original_page)
+        self._info_layout.update()
 
     def _regenerate_backgrounds_click(self):
         if not self._current_page_getter:
@@ -283,6 +305,26 @@ class MainWindow(QtWidgets.QFrame):
     def _update_save_button_state(self, new_selected_opt: int):
         changes_count = self._selected_local_opt + self._selected_background_opt + self._selected_global_opt
         self._save_button.setEnabled(changes_count > 0)
+
+    def _goto_button_click(self):
+        if self._goto_dialog:
+            return
+
+        self._goto_dialog = GoToDialog(self, self._document)
+        self._goto_dialog.show()
+        self._goto_dialog.ok_button.clicked.connect(self._goto_dialog_accepted)
+
+    def _goto_dialog_accepted(self):
+        self._goto_dialog.close()
+
+        selected_idx = self._goto_dialog.number.value() - 1
+        if self._goto_dialog.page_option.isChecked():
+            self._goto_page(selected_idx)
+        else:
+            self._goto_frame(selected_idx)
+
+        self._goto_dialog.destroy()
+        self._goto_dialog = None
 
     def resizeEvent(self, event):
         self._display_page()

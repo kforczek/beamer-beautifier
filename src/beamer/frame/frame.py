@@ -82,10 +82,10 @@ class Frame:
         """
         return self._original_version.code()
 
-    def next_page(self, page_getter: PageGetter) -> Optional[Any]:
+    def next_page(self, page_getter: Optional[PageGetter]) -> Optional[Any]:
         """
-        Immediately returns the pixmap of the original next page and notifies the compiling thread to prioritize
-        loading corresponding improvements.
+        Immediately returns the pixmap of the original next page and - if page_getter has been provided - notifies
+        the compiling thread to prioritize loading corresponding improvements.
         :return: next page from the original PDF file, or None if there is no next page.
         """
         if self._current_page >= self._original_version.page_count() - 1:
@@ -95,10 +95,10 @@ class Frame:
         self._current_page += 1
         return self._load_current_page(page_getter)
 
-    def prev_page(self, page_getter: PageGetter) -> Optional[Any]:
+    def prev_page(self, page_getter: Optional[PageGetter]) -> Optional[Any]:
         """
-        Immediately returns the pixmap of the original previous page and notifies the compiling thread to prioritize
-        loading corresponding improvements.
+        Immediately returns the pixmap of the original previous page and - if page_getter has been provided - notifies
+        the compiling thread to prioritize loading corresponding improvements.
         :return: previous page from the original PDF file, or None if there is no previous page.
         """
         if self._current_page <= 0:
@@ -167,9 +167,10 @@ class Frame:
             self._original_version, self._name, self._tmp_dir_path, progress_info)
         self._global_versions = ColorSetsImprovementsManager(original_code, self._name, self._tmp_dir_path)
 
-    def _load_current_page(self, page_getter: PageGetter):
-        task = PriorityLoadTask(self._idx, self._current_page, page_getter)
-        self._compiler.set_priority_task(task)
+    def _load_current_page(self, page_getter: Optional[PageGetter]):
+        if page_getter:
+            task = PriorityLoadTask(self._idx, self._current_page, page_getter)
+            self._compiler.set_priority_task(task)
         return pixmap_from_document(self._original_version.doc(), self._current_page)
 
     def _ensure_improvements_generated(self):
