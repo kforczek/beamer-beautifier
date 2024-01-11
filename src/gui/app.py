@@ -254,7 +254,8 @@ class MainWindow(QtWidgets.QFrame):
         current_width = self._image_display.width()
         current_height = self._image_display.height()
         pixmap = image_to_display.scaled(
-            current_width, current_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation
+            current_width, current_height,
+            QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation
         )
         self._image_display.setPixmap(pixmap)
 
@@ -299,8 +300,14 @@ class MainWindow(QtWidgets.QFrame):
                                                      directory=self._doc_folder_path)[0]
         if not path:
             return
-        self._document.save(path)
-        self._splitter.notify_saved()
+
+        operation = lambda: self._document.save(path)
+        dialog_title = "Saving..."
+        dialog_text = "Please wait while the modified presentation is saved."
+
+        runner = WaitingDialogRunner(self, operation, dialog_title, dialog_text)
+        runner.finished.connect(self._splitter.notify_saved)
+        runner.start()
 
     def _update_save_button_state(self, new_selected_opt: int):
         changes_count = self._selected_local_opt + self._selected_background_opt + self._selected_global_opt
@@ -364,7 +371,9 @@ def to_qt_pixmap(fitz_pixmap):
 
 
 def to_thumbnail_item(qt_pixmap):
-    pixmap = qt_pixmap.scaled(200, 200, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+    pixmap = qt_pixmap.scaled(200, 200,
+                              QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                              QtCore.Qt.TransformationMode.SmoothTransformation)
     item = QtWidgets.QListWidgetItem()
     item.setIcon(QtGui.QIcon(pixmap))
     return item
@@ -378,7 +387,7 @@ def run_app(app: QApplication, doc_path: str, doc_folder: str):
     dialog_title = "Loading..."
     dialog_text = "Please wait while the document is loaded."
 
-    runner = WaitingDialogRunner(lambda: BeamerDocument(doc_path), dialog_title, dialog_text)
+    runner = WaitingDialogRunner(None, lambda: BeamerDocument(doc_path), dialog_title, dialog_text)
     runner.finished.connect(document_compiled)
     runner.start()
 

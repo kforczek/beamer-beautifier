@@ -290,13 +290,13 @@ class WaitingDialogRunner(QtWidgets.QProgressDialog):
             result = self._operation()
             self.result_available.emit(result)
 
-    def __init__(self, operation: Callable, dialog_title="", dialog_text=""):
+    def __init__(self, parent: Optional[QtWidgets.QWidget], operation: Callable, dialog_title="", dialog_text=""):
         """
         :param operation: operation to perform - will be called in a separate QThread.
         :param dialog_title: title of the waiting dialog window.
         :param dialog_text: text of the waiting dialog window.
         """
-        super().__init__()
+        super().__init__(parent)
 
         self.setWindowTitle(dialog_title)
         self.setLabelText(dialog_text)
