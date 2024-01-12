@@ -14,12 +14,6 @@ class FrameImprovement:
         Suggests an improvement of the frame if preconditions are met (or if there are no preconditions).
         :return: Improved code of the frame or None if the preconditions exist and are not met.
         """
-        if not self.check_preconditions(frame_code):
-            return None
-
-        return self._improve(frame_code)
-
-    def _improve(self, frame_code: FrameCode) -> FrameCode:
         raise NotImplementedError("Overridden in subclasses")
 
 
@@ -38,7 +32,10 @@ class ItemizeIndentIncrease(FrameImprovement):
     def check_preconditions(self, frame_code: FrameCode) -> bool:
         return tokens.ITEMIZE_BEGIN in frame_code.base_code
 
-    def _improve(self, frame_code: FrameCode) -> FrameCode:
+    def improve(self, frame_code: FrameCode) -> Optional[FrameCode]:
+        if not self.check_preconditions(frame_code):
+            return None
+
         code = frame_code.base_code
         items_begin = code.find(tokens.ITEMIZE_BEGIN) + len(tokens.ITEMIZE_BEGIN)
         items_to_center = code[: items_begin] + tokens.items_indent(2) + code[items_begin:]
@@ -63,7 +60,10 @@ class ListToTable(FrameImprovement):
         count = len(self._split_top_list_items(frame_code.base_code).items)
         return 1 < count <= 4
 
-    def _improve(self, frame_code: FrameCode) -> FrameCode:
+    def improve(self, frame_code: FrameCode) -> Optional[FrameCode]:
+        if not self.check_preconditions(frame_code):
+            return None
+
         split_code = self._split_top_list_items(frame_code.base_code)
         changed_snippet = r"\begin{tabular}{" + 'c'*len(split_code.items) + "}\n"
         for item in split_code.items[:-1]:
