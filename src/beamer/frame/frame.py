@@ -37,13 +37,13 @@ class Frame:
     """Single Beamer frame"""
 
     def __init__(self, name: str, src_dir_path: str, code: str,
-                 include_code: str, compiler: IPageLoadingHandler, progress_info: FrameProgressInfo):
+                 include_code: str, loading_handler: IPageLoadingHandler, progress_info: FrameProgressInfo):
         """
         :param name: identifier that will be used to identify temporary TeX and PDF files resulting from this frame
         :param src_dir_path: path to the directory where the document containing the frame is located
         :param code: source code of the frame itself, encapsuled by \begin{frame} and \end{frame} commands
         :param include_code: optional LaTeX code snippet containing package includes
-        :param compiler: handler for multithreading compilation
+        :param loading_handler: handler for multithreading compilation and page loading
         :param progress_info: information about the frame location in the source document
         """
 
@@ -51,7 +51,7 @@ class Frame:
 
         self._name = name
         self._src_dir = src_dir_path
-        self._compiler = compiler
+        self._loading_handler = loading_handler
         self._idx = progress_info.frame_idx
 
         self._tmp_dir_path = create_temp_dir(self._src_dir)
@@ -119,7 +119,7 @@ class Frame:
         Notifies the compiling thread to prioritize regenerating background improvements for the current page.
         """
         task = BackgroundRegenerationTask(self._idx, self._current_page, page_getter)
-        self._compiler.set_priority_task(task)
+        self._loading_handler.set_priority_task(task)
 
     def local_improvements(self) -> LocalImprovementsManager:
         """
@@ -170,7 +170,7 @@ class Frame:
     def _load_current_page(self, page_getter: Optional[PageGetter]):
         if page_getter:
             task = PriorityLoadTask(self._idx, self._current_page, page_getter)
-            self._compiler.set_priority_task(task)
+            self._loading_handler.set_priority_task(task)
         return pixmap_from_document(self._original_version.doc(), self._current_page)
 
     def _ensure_improvements_generated(self):
