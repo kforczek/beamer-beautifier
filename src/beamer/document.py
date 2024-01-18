@@ -224,7 +224,7 @@ class BeamerDocument:
         doc_name = os.path.basename(self._path).rsplit('.', 1)[0].replace(' ', '_')
         idx_len = len(str(len(raw_frames)))
 
-        compiler = PageLoadingHandler()
+        loading_handler = PageLoadingHandler()
         self._frames = []
         for idx, frame_code in enumerate(raw_frames):
             frame_code = frame_code[: frame_code.rfind(tokens.FRAME_END)]
@@ -238,7 +238,7 @@ class BeamerDocument:
             progress_info = FrameProgressInfo(idx, len(raw_frames))
 
             frame = Frame(frame_filename, os.path.dirname(self._path),
-                          frame_code, self._header, compiler, progress_info)
+                          frame_code, self._header, loading_handler, progress_info)
             self._frames.append(frame)
-        compiler.init_frames(self._frames)
-        compiler.start()
+        loading_handler.init_frames(self._frames)
+        loading_handler.start()
